@@ -2,18 +2,21 @@
 
 Требуется: 
 1. Создать репозиторий проекта Route256Five в https://gitlab.ozon.dev/cs/classroom-5/Week-1
-2. Создать проект OrdersService
-3. Описать файл Dockerfile для OrdersService
-4. Описать файл docker-compose.yaml. 
-5. Создать 2 instance для OrdersService
-6. Добавить postgres
-7. Закоммитеть проект
-8. Обновить Registry
+2. Создать проект Ozon.Route256.Five.OrderService
+3. Описать файл Dockerfile для Ozon.Route256.Five.OrderService
+4. Описать файл docker-compose.yaml
+ - kafka
+ - postgress (база данных costomers, база данных orders)
+ - CustomerService, LogisticsSimulator, OrdersGenerator, ServiceDiscovery - на базе образов из  gitlab-registry.ozon.dev 
+ - OrderService - на базе Dockerfile
+ - jaeger
+5. Создать 2 instance для OrderService
+6. Закоммитить проект
 
 
 Конечный результат: 
-1. Присутствуют images: CustomerService, OrdersService, LogisticsSimulator, OrdersGenerator, ServiceDiscovery, kafka, postgres
-2. Корректно стартуют контейнеры: CustomerService, OrdersService, LogisticsSimulator, OrdersGenerator, ServiceDiscovery, kafka, postgres
+1. Присутствуют images: CustomerService, OrdersService, LogisticsSimulator, OrderGenerator, ServiceDiscovery, kafka, postgres, jaeger
+2. Корректно стартуют контейнеры: CustomerService, OrderService, LogisticsSimulator, OrdersGenerator, ServiceDiscovery, kafka, postgres, jaeger
 
 
 
