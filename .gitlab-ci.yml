@@ -1,0 +1,10 @@
+stages:
+  - Build
+
+dotnet build:
+  stage: Build
+  image: mcr.microsoft.com/dotnet/sdk:6.0
+  needs: []
+  script:
+  - dotnet restore src/*
+  - dotnet build src/* --no-restore
