@@ -1,0 +1,8 @@
+version: '3.4'
+
+services:
+  ozon.route256.five.orderservice:
+    image: ${DOCKER_REGISTRY-}ozonroute256fiveorderservice
+    build:
+      context: .
+      dockerfile: src/Ozon.Route256.Five.OrderService/Dockerfile
