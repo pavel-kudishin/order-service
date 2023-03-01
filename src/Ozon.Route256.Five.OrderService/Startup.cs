@@ -24,22 +24,15 @@ namespace Ozon.Route256.Five.OrderService
 			services.AddGrpcReflection();
 
 			services.AddSingleton<IDbStore, DbStore>();
+			services.AddSingleton<LoggerInterceptor>();
 			services.AddHostedService<SdConsumerHostedService>();
 			services.AddGrpcClient<SdService.SdServiceClient>(
 				options =>
 				{
 					string? address = _configuration.GetValue<string>("ROUTE256_SERVICE_DISCOVERY_ADDRESS");
 					options.Address = new Uri(address);
-					options.InterceptorRegistrations.Add(
-						new InterceptorRegistration(
-							InterceptorScope.Client,
-							sp =>
-							{
-								ILoggerFactory loggerFactory = sp.GetRequiredService<ILoggerFactory>();
-
-								return new LoggerInterceptor(loggerFactory.CreateLogger<LoggerInterceptor>());
-							}));
-				});
+				})
+				.AddInterceptor<LoggerInterceptor>();;
 			services.AddSwaggerGen();
 
 			services.AddScoped<IValidator<OrdersByCustomerRequestDto>, OrdersByCustomerRequestDtoValidator>();
