@@ -5,8 +5,9 @@
     <DockerTargetOS>Linux</DockerTargetOS>
     <ProjectGuid>f0b0d970-fc72-41e7-a86f-68fa84d0ff38</ProjectGuid>
     <DockerLaunchAction>LaunchBrowser</DockerLaunchAction>
-    <DockerServiceUrl>{Scheme}://localhost:{ServicePort}</DockerServiceUrl>
+    <DockerServiceUrl>{Scheme}://localhost:{ServicePort}/swagger</DockerServiceUrl>
     <DockerServiceName>ozon.route256.five.orderservice</DockerServiceName>
+    <DockerComposeProjectName>cs-5-homework</DockerComposeProjectName>
   </PropertyGroup>
   <ItemGroup>
     <None Include="docker-compose.override.yml">

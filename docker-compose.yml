@@ -1,10 +1,13 @@
 version: '3.4'
-
+name: cs-5-homework
 services:
   ozon.route256.five.orderservice:
     image: ${DOCKER_REGISTRY-}ozonroute256fiveorderservice
     ports:
-     - "50060-50061:80"
+     - "50060-50061:50001"
+     - "50070-50071:50002"
+    environment:
+     - ROUTE256_SERVICE_DISCOVERY_ADDRESS=http://host.docker.internal:5084
     build:
       context: .
       dockerfile: src/Ozon.Route256.Five.OrderService/Dockerfile
@@ -43,13 +46,11 @@ services:
     ports:
      - "9092:9092"
     environment:
+     - KAFKA_BROKER_ID=1
+     - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092
+     - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://127.0.0.1:9092
      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
      - ALLOW_PLAINTEXT_LISTENER=yes
-     - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092
-     - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CLIENT:PLAINTEXT,EXTERNAL:PLAINTEXT
-     - KAFKA_CFG_LISTENERS=CLIENT://:9092,EXTERNAL://:9093
-     - KAFKA_CFG_ADVERTISED_LISTENERS=CLIENT://kafka:9092,EXTERNAL://localhost:9093
-     - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=CLIENT
     depends_on:
      - zookeeper
     restart: unless-stopped
@@ -121,6 +122,10 @@ services:
     image: gitlab-registry.ozon.dev/cs/classroom-5/teachers/five/service-discovery:latest
     ports:
      - "5084:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ROUTE256_DB_STATE=cluster:0-9:db1:1543;cluster:10-19:db2:1543;cluster1:0:db3:1543 
+      - ROUTE256_UPDATE_TIMEOUT=10
     restart: unless-stopped
 
 volumes:

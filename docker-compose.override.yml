@@ -4,9 +4,7 @@ services:
   ozon.route256.five.orderservice:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_URLS=https://+:443;http://+:80
-    ports:
-     - "5050:443"
+      - ASPNETCORE_URLS=http://+:80;http://+:50001;http://+:50002
     volumes:
       - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
       - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
