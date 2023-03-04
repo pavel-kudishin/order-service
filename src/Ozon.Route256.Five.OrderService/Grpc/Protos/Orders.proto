@@ -1,0 +1,56 @@
+syntax = "proto3";
+option csharp_namespace = "Ozon.Route256.Five.Orders.Grpc";
+
+import "google/protobuf/timestamp.proto";
+
+service Orders
+{
+  rpc GetOrder (GetOrderRequest) returns (Order);
+}
+
+message GetOrderRequest {
+  int64 order_id = 1;
+}
+
+message Order {
+  int64 id = 1;
+  int32 articles_count = 2;
+  Price total_price = 3;
+  int32 total_weight = 4; // грамм
+  OrderTypes order_type = 5;
+  google.protobuf.Timestamp date_created = 6;
+  string status = 7;
+  string customer_name = 8;
+  Address delivery_address = 9;
+  string phone = 10;
+}
+
+enum OrderTypes {
+  pickup = 0;
+  delivery = 1;
+}
+
+message Region {
+  int64 id = 1;
+  string name = 2;
+}
+
+message Address {
+  int64 id = 1;
+  Region region = 2;
+  string city = 3;
+  string street = 4;
+  string building = 5;
+  string apartment = 6;
+  double latitude = 7;
+  double longitude = 8;
+}
+
+message Price {
+
+    // Рубли
+    int32 rubles = 1;
+
+    // Копейки
+    int32 kopecks = 2;
+}

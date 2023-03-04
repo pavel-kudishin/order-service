@@ -1,5 +1,5 @@
 ﻿using FluentValidation;
-using Ozon.Route256.Five.OrderService.Dto;
+using Ozon.Route256.Five.OrderService.Rest.Dto;
 using System;
 
 namespace Ozon.Route256.Five.OrderService.Validators;
