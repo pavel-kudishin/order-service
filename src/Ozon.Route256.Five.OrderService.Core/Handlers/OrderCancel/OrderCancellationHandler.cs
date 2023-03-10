@@ -7,11 +7,11 @@ namespace Ozon.Route256.Five.OrderService.Core.Handlers.OrderCancel;
 public class OrderCancellationHandler : IOrderCancellationHandler
 {
     private readonly IOrderRepository _orderRepository;
-    private readonly ILogisticsSimulatorServiceClientWrapper _client;
+    private readonly ILogisticService _client;
 
     public OrderCancellationHandler(
         IOrderRepository orderRepository,
-        ILogisticsSimulatorServiceClientWrapper client)
+        ILogisticService client)
     {
         _orderRepository = orderRepository;
         _client = client;

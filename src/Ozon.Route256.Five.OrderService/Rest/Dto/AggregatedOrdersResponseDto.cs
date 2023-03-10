@@ -26,7 +26,7 @@ public sealed class AggregatedOrdersResponseDto
     /// Суммарный вес
     /// </summary>
     [Required]
-    public double TotalWeight { get; set; }
+    public decimal TotalWeight { get; set; }
 
     /// <summary>
     /// Количество клиентов, сделавших заказ в этом регионе

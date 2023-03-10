@@ -4,7 +4,7 @@ public record OrderDto(
     long Id,
     int ArticlesCount,
     decimal TotalPrice,
-    int TotalWeight,
+    decimal TotalWeight,
     OrderTypesDto OrderType,
     DateTime DateCreated,
     int RegionId,

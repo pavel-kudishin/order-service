@@ -26,7 +26,7 @@ public static class ServiceCollectionExtensions
         services.AddGrpcReflection();
 
         services.AddSingleton<LoggerInterceptor>();
-        services.AddScoped<ILogisticsSimulatorServiceClientWrapper, LogisticsSimulatorServiceClientWrapper>();
+        services.AddScoped<ILogisticService, LogisticService>();
 
         services.AddGrpcClient<SdService.SdServiceClient>(
                 options =>

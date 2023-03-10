@@ -81,9 +81,9 @@ public static class MappingExtensions
         };
     }
 
-    public static OrderTypesDto[] ToDtoOrderTypes(this OrderTypesBo[] orderTypes)
+    public static OrderTypesDto[]? ToDtoOrderTypes(this OrderTypesBo[]? orderTypes)
     {
-        return orderTypes.Select(o => o.ToDtoOrderType()).ToArray();
+        return orderTypes?.Select(o => o.ToDtoOrderType()).ToArray();
     }
 
     public static OrderingDirectionDto ToDtoDirection(this OrderingDirectionBo direction)

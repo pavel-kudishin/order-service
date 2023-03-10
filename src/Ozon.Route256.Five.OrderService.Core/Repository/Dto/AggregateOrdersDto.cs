@@ -8,7 +8,7 @@ public class AggregateOrdersDto
 
     public decimal TotalOrdersPrice { get; set; }
 
-    public double TotalWeight { get; set; }
+    public decimal TotalWeight { get; set; }
 
     public int CustomersCount { get; set; }
 }

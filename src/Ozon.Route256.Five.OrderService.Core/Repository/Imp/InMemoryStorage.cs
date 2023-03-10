@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using System.Linq;
 using Ozon.Route256.Five.OrderService.Core.Repository.Dto;
 
 namespace Ozon.Route256.Five.OrderService.Core.Repository.Imp;
@@ -30,16 +31,31 @@ public class InMemoryStorage
         FillOrders();
     }
 
+    private RegionDto GetRandomRegion()
+    {
+        return Regions[Faker.RandomNumber.Next(0, Regions.Count - 1)];
+    }
+
+    private AddressDto GetRandomAddress()
+    {
+        return Addresses[Faker.RandomNumber.Next(1, Addresses.Count)];
+    }
+
+    private CustomerDto GetRandomCustomer()
+    {
+        return Customers[Faker.RandomNumber.Next(1, Customers.Count)];
+    }
+
     private void FillCustomers()
     {
         IEnumerable<CustomerDto> customers = Enumerable
-            .Range(1, INITIAL_ADDRESSES_COUNT)
+            .Range(1, INITIAL_CUSTOMERS_COUNT)
             .Select(id =>
             {
                 int addressesCount = Faker.RandomNumber.Next(1, 5);
                 int[] addresses = Enumerable
                     .Range(1, addressesCount)
-                    .Select(i => Faker.RandomNumber.Next(1, INITIAL_ADDRESSES_COUNT))
+                    .Select(i => GetRandomAddress().Id)
                     .ToArray();
 
                 return new CustomerDto(
@@ -71,7 +87,7 @@ public class InMemoryStorage
                 Apartment: Faker.RandomNumber.Next(1, 200).ToString(),
                 Latitude: Faker.RandomNumber.Next(40, 55) + Faker.RandomNumber.Next() / (double)int.MaxValue,
                 Longitude: Faker.RandomNumber.Next(40, 55) + Faker.RandomNumber.Next() / (double)int.MaxValue,
-                RegionId: Faker.RandomNumber.Next(0, INITIAL_REGIONS_COUNT - 1)
+                RegionId: GetRandomRegion().Id
             ));
 
         foreach (AddressDto address in addresses)
@@ -89,21 +105,20 @@ public class InMemoryStorage
             .Range(1, INITIAL_ORDERS_COUNT)
             .Select(id =>
             {
-                int addressId = Faker.RandomNumber.Next(1, INITIAL_ADDRESSES_COUNT);
-                AddressDto addressDto = Addresses[addressId];
+                AddressDto addressDto = GetRandomAddress();
 
                 return new OrderDto(
                     Id: id,
                     ArticlesCount: Faker.RandomNumber.Next(1, 5),
                     TotalPrice: Faker.RandomNumber.Next(200 * 100, 10_000 * 100) / 100m,
-                    TotalWeight: Faker.RandomNumber.Next(100, 5_000),
+                    TotalWeight: Faker.RandomNumber.Next(100, 5_000) / 1000m,
                     OrderType: orderTypes[Faker.RandomNumber.Next(0, 1)],
                     DateCreated: DateTime.UtcNow
                         .AddMinutes(-Faker.RandomNumber.Next(0, 60 * 24 * 100)), // 100 days
                     RegionId: addressDto.RegionId,
                     Status: orderStates[Faker.RandomNumber.Next(0, orderStates.Length - 1)],
-                    CustomerId: Faker.RandomNumber.Next(1, INITIAL_CUSTOMERS_COUNT),
-                    AddressId: addressId,
+                    CustomerId: GetRandomCustomer().Id,
+                    AddressId: addressDto.Id,
                     Phone: Faker.Phone.Number()
                 );
             });

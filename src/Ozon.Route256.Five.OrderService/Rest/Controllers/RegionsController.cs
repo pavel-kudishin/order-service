@@ -14,17 +14,6 @@ namespace Ozon.Route256.Five.OrderService.Rest.Controllers
     [ApiController]
     public sealed class RegionsController : ControllerBase
     {
-        private readonly ILogger<RegionsController> _logger;
-        private readonly IServiceProvider _serviceProvider;
-
-        public RegionsController(
-            ILogger<RegionsController> logger,
-            IServiceProvider serviceProvider)
-        {
-            _logger = logger;
-            _serviceProvider = serviceProvider;
-        }
-
         /// <summary>
         /// 2.4 Ручка возврата списка регионов
         /// </summary>
@@ -32,9 +21,9 @@ namespace Ozon.Route256.Five.OrderService.Rest.Controllers
         [HttpGet]
         [Route("[action]")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<ActionResult<IEnumerable<RegionDto>>> GetRegions()
+        public async Task<ActionResult<IEnumerable<RegionDto>>> GetRegions(
+            [FromServices] IRegionsGettingHandler handler)
         {
-            IRegionsGettingHandler handler = _serviceProvider.GetRequiredService<IRegionsGettingHandler>();
             HandlerResult<RegionBo[]> result = await handler.Handle(HttpContext.RequestAborted);
 
             return result.Value.ToRegionsDto() ?? Array.Empty<RegionDto>();

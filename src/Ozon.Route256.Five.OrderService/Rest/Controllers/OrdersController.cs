@@ -21,31 +21,21 @@ namespace Ozon.Route256.Five.OrderService.Rest.Controllers
     [ApiController]
     public sealed class OrdersController : ControllerBase
     {
-        private readonly IServiceProvider _serviceProvider;
-        private readonly ILogger<OrdersController> _logger;
-
-        public OrdersController(
-            IServiceProvider serviceProvider,
-            ILogger<OrdersController> logger)
-        {
-            _serviceProvider = serviceProvider;
-            _logger = logger;
-        }
-
         /// <summary>
         /// 2.1 Ручка отмены заказа
         /// </summary>
         /// <param name="orderId">Номер заказа</param>
+        /// <param name="handler"></param>
         /// <returns></returns>
-        [HttpGet]
+        [HttpPost]
         [Route("[action]")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult> CancelOrder(
-            [FromQuery][Required] long orderId)
+            [FromQuery][Required] long orderId,
+            [FromServices] IOrderCancellationHandler handler)
         {
-            IOrderCancellationHandler handler = _serviceProvider.GetRequiredService<IOrderCancellationHandler>();
             IOrderCancellationHandler.Request handlerRequest = new(orderId);
             HandlerResult result = await handler.Handle(handlerRequest, HttpContext.RequestAborted);
 
@@ -69,15 +59,16 @@ namespace Ozon.Route256.Five.OrderService.Rest.Controllers
         /// 2.2 Ручка возврата статуса заказа
         /// </summary>
         /// <param name="orderId">Номер заказа</param>
+        /// <param name="handler"></param>
         /// <returns></returns>
         [HttpGet]
         [Route("[action]")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<OrderStatusResponseDto>> GetOrderStatus(
-            [FromQuery][Required] long orderId)
+            [FromQuery][Required] long orderId,
+            [FromServices] IOrderStatusGettingHandler handler)
         {
-            IOrderStatusGettingHandler handler = _serviceProvider.GetRequiredService<IOrderStatusGettingHandler>();
             IOrderStatusGettingHandler.Request handlerRequest = new(orderId);
             HandlerResult<string> result = await handler.Handle(handlerRequest, HttpContext.RequestAborted);
 
@@ -100,16 +91,18 @@ namespace Ozon.Route256.Five.OrderService.Rest.Controllers
         /// 2.5 Ручка возврата списка заказов
         /// </summary>
         /// <param name="request"></param>
+        /// <param name="validator"></param>
+        /// <param name="handler"></param>
         /// <returns></returns>
         [HttpPost]
         [Route("[action]")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<IEnumerable<OrderDto>>> GetOrders(
-            [FromBody][Required] OrdersRequestDto request)
+            [FromBody][Required] OrdersRequestDto request,
+            [FromServices] IValidator<OrdersRequestDto> validator,
+            [FromServices] IOrdersGettingHandler handler)
         {
-            IValidator<OrdersRequestDto> validator =
-                _serviceProvider.GetRequiredService<IValidator<OrdersRequestDto>>();
             ValidationResult validationResult =
                 await validator.ValidateAsync(request, HttpContext.RequestAborted);
 
@@ -118,7 +111,6 @@ namespace Ozon.Route256.Five.OrderService.Rest.Controllers
                 return BadRequest(validationResult.ToString());
             }
 
-            IOrdersGettingHandler handler = _serviceProvider.GetRequiredService<IOrdersGettingHandler>();
             IOrdersGettingHandler.Request handlerRequest = request.ToOrdersGettingHandlerRequest();
             HandlerResult<OrderBo[]> result = await handler.Handle(handlerRequest, HttpContext.RequestAborted);
 
@@ -141,10 +133,10 @@ namespace Ozon.Route256.Five.OrderService.Rest.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<IEnumerable<OrderDto>>> GetOrdersByCustomer(
-            [FromBody][Required] OrdersByCustomerRequestDto request)
+            [FromBody][Required] OrdersByCustomerRequestDto request,
+            [FromServices] IValidator<OrdersByCustomerRequestDto> validator,
+            [FromServices] IOrdersByCustomerGettingHandler handler)
         {
-            IValidator<OrdersByCustomerRequestDto> validator =
-                _serviceProvider.GetRequiredService<IValidator<OrdersByCustomerRequestDto>>();
             ValidationResult validationResult =
                 await validator.ValidateAsync(request, HttpContext.RequestAborted);
 
@@ -153,7 +145,6 @@ namespace Ozon.Route256.Five.OrderService.Rest.Controllers
                 return BadRequest(validationResult.ToString());
             }
 
-            IOrdersByCustomerGettingHandler handler = _serviceProvider.GetRequiredService<IOrdersByCustomerGettingHandler>();
             IOrdersByCustomerGettingHandler.Request handlerRequest = request.ToOrdersByCustomerGettingHandlerRequest();
             HandlerResult<OrderBo[]> result = await handler.Handle(handlerRequest, HttpContext.RequestAborted);
 

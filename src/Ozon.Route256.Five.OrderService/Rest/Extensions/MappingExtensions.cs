@@ -18,7 +18,7 @@ public static class MappingExtensions
             MobileNumber = customer.MobileNumber,
             Email = customer.Email,
             Address = customer.Address?.ToAddressDto(),
-            Addresses = customer.Addresses?.ToAddressesDto(),
+            Addresses = customer.Addresses.ToAddressesDto(),
         };
     }
 

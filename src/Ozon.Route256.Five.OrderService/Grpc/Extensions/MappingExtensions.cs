@@ -36,8 +36,8 @@ public static class MappingExtensions
         {
             Id = order.Id,
             ArticlesCount = order.ArticlesCount,
-            TotalPrice = order.TotalPrice,
-            TotalWeight = order.TotalWeight,
+            TotalPrice = (double)order.TotalPrice,
+            TotalWeight = (double)order.TotalWeight,
             OrderType = order.OrderType.ToProtoOrderType(),
             DateCreated = order.DateCreated.ToTimestamp(),
             Status = order.Status,

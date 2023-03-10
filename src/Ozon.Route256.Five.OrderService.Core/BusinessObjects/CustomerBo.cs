@@ -3,10 +3,10 @@
 public class CustomerBo
 {
     public int Id { get; init; }
-    public string FirstName { get; init; } = "";
-    public string LastName { get; init; } = "";
-    public string MobileNumber { get; init; } = "";
-    public string Email { get; init; } = "";
+    public string FirstName { get; init; } = string.Empty;
+    public string LastName { get; init; } = string.Empty;
+    public string MobileNumber { get; init; } = string.Empty;
+    public string Email { get; init; } = string.Empty;
     public AddressBo? Address { get; init; }
     public AddressBo[]? Addresses { get; init; }
 }

@@ -2,7 +2,7 @@
 
 namespace Ozon.Route256.Five.OrderService.Core;
 
-public interface ILogisticsSimulatorServiceClientWrapper
+public interface ILogisticService
 {
     Task<HandlerResult> OrderCancelAsync(long orderId, CancellationToken token);
 }

@@ -16,7 +16,7 @@ public class OrderCancellationHandlerTests
         orderRepository.Setup(repo => repo.Find(TestData.ORDER_ID, CancellationToken.None))
             .Returns(TestData.GetTestOrder());
 
-        Mock<ILogisticsSimulatorServiceClientWrapper> client = new();
+        Mock<ILogisticService> client = new();
         client.Setup(repo => repo.OrderCancelAsync(TestData.ORDER_ID, CancellationToken.None))
             .Returns(Task.FromResult<HandlerResult>(HandlerResult.Ok));
 

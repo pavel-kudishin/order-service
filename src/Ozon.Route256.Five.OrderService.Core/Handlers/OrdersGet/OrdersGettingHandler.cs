@@ -41,7 +41,7 @@ public class OrdersGettingHandler : IOrdersGettingHandler
 
         OrderDto[] orders = await _orderRepository.Filter(
             request.RegionIds,
-            request.OrderTypes?.ToDtoOrderTypes(),
+            request.OrderTypes.ToDtoOrderTypes(),
             request.PageNumber,
             request.ItemsPerPage,
             request.Direction.ToDtoDirection(),

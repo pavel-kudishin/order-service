@@ -1,7 +1,10 @@
-﻿namespace Ozon.Route256.Five.OrderService.Rest.Dto;
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace Ozon.Route256.Five.OrderService.Rest.Dto;
 
 public sealed class AddressDto
 {
+    [Required]
     public int Id { get; set; }
 
     public RegionDto? Region { get; set; }

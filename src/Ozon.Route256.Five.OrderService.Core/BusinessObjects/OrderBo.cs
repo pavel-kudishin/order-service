@@ -2,14 +2,14 @@
 
 public class OrderBo
 {
-    public long Id { get; set; }
-    public int ArticlesCount { get; set; }
-    public decimal TotalPrice { get; set; }
-    public int TotalWeight { get; set; }
-    public OrderTypesBo OrderType { get; set; }
-    public DateTime DateCreated { get; set; }
-    public string Status { get; set; } = "";
-    public CustomerBo? Customer { get; set; }
-    public AddressBo? Address { get; set; }
-    public string Phone { get; set; } = "";
+    public long Id { get; init; }
+    public int ArticlesCount { get; init; }
+    public decimal TotalPrice { get; init; }
+    public decimal TotalWeight { get; init; }
+    public OrderTypesBo OrderType { get; init; }
+    public DateTime DateCreated { get; init; }
+    public string Status { get; init; } = string.Empty;
+    public CustomerBo? Customer { get; init; }
+    public AddressBo? Address { get; init; }
+    public string Phone { get; init; } = string.Empty;
 }

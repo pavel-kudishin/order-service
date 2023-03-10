@@ -23,10 +23,10 @@ public sealed class OrderDto
     public decimal TotalPrice { get; set; }
 
     /// <summary>
-    /// Общий вес заказа в граммах
+    /// Общий вес заказа в кг
     /// </summary>
     [Required]
-    public int TotalWeight { get; set; }
+    public decimal TotalWeight { get; set; }
 
     /// <summary>
     /// Тип заказа
