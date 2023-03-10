@@ -16,27 +16,34 @@
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.17.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
-    <PackageReference Include="Grpc.Tools" Version="2.51.0" />
+    <PackageReference Include="Grpc.Tools" Version="2.52.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="Grpc.AspNetCore" Version="2.51.0" />
     <PackageReference Include="Grpc.AspNetCore.Server.Reflection" Version="2.51.0" />
     <PackageReference Include="Grpc.Net.Client" Version="2.51.0" />
-    <PackageReference Include="Google.Protobuf" Version="3.21.12" />
+    <PackageReference Include="Google.Protobuf" Version="3.22.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="GrpcServices\" />
     <Folder Include="ClientBalancing\" />
   </ItemGroup>
 
   <ItemGroup>
-    <Protobuf Include="Protos\sd.proto" GrpcServices="Client" />
-    <Protobuf Include="Protos\Customers.proto" GrpcServices="Client" />
-    <Protobuf Include="Protos\Orders.proto" GrpcServices="Service" />
+    <Protobuf Include="Grpc\Protos\LogisticsSimulator.proto" GrpcServices="Client" />
+    <Protobuf Include="Grpc\Protos\sd.proto" GrpcServices="Client" />
+    <Protobuf Include="Grpc\Protos\Customers.proto" GrpcServices="Client" />
+    <Protobuf Include="Grpc\Protos\Orders.proto" GrpcServices="Service" />
   </ItemGroup>
 
   <ItemGroup>
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
     <_Parameter1>Ozon.Route256.Five.OrderService.Tests</_Parameter1>
     </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ozon.Route256.Five.OrderService.Core\Ozon.Route256.Five.OrderService.Core.csproj" />
   </ItemGroup>
 </Project>

@@ -8,6 +8,7 @@ services:
      - "50070-50071:50002"
     environment:
      - ROUTE256_SERVICE_DISCOVERY_ADDRESS=http://host.docker.internal:5084
+     - ROUTE256_LOGISTICS_SIMULATOR_ADDRESS=http://host.docker.internal:5082
     build:
       context: .
       dockerfile: src/Ozon.Route256.Five.OrderService/Dockerfile
@@ -22,7 +23,7 @@ services:
      - redis-orders
      - jaeger
     restart: unless-stopped
- 
+
   redis-customers:
     image: redis
     restart: unless-stopped
@@ -36,7 +37,7 @@ services:
     restart: unless-stopped
 
   zookeeper:
-    image: zookeeper 
+    image: zookeeper
     ports:
       - "2181:2181"
     restart: unless-stopped
@@ -103,7 +104,7 @@ services:
   logistics-simulator:
     image: gitlab-registry.ozon.dev/cs/classroom-5/teachers/five/logistics-simulator:latest
     ports:
-     - "5082:80"
+     - "5082:5080"
     depends_on:
      - kafka
      - redis-logistics
@@ -124,7 +125,7 @@ services:
      - "5084:80"
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
-      - ROUTE256_DB_STATE=cluster:0-9:db1:1543;cluster:10-19:db2:1543;cluster1:0:db3:1543 
+      - ROUTE256_DB_STATE=cluster:0-9:db1:1543;cluster:10-19:db2:1543;cluster1:0:db3:1543
       - ROUTE256_UPDATE_TIMEOUT=10
     restart: unless-stopped
 

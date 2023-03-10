@@ -1,5 +1,7 @@
 /src/Ozon.Route256.Five.OrderService/bin
 /src/Ozon.Route256.Five.OrderService/obj
+/src/Ozon.Route256.Five.OrderService.Core/bin
+/src/Ozon.Route256.Five.OrderService.Core/obj
 /tests/Ozon.Route256.Five.OrderService.Tests/bin
 /tests/Ozon.Route256.Five.OrderService.Tests/obj
 /bin
@@ -7,4 +9,3 @@
 /.vs
 /.idea
 *.user
-
