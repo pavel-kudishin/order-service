@@ -17,12 +17,9 @@ public class OrderGettingHandlerTests
         orderRepository.Setup(repo => repo.Find(1, CancellationToken.None))
             .Returns(Task.FromResult<OrderDto?>(null));
 
-        Mock<IRegionRepository> regionRepository = new();
-        Mock<IAddressRepository> addressRepository = new();
         Mock<ICustomerRepository> customerRepository = new();
 
-        OrderGettingHandler handler =
-            new(orderRepository.Object, regionRepository.Object, addressRepository.Object, customerRepository.Object);
+        OrderGettingHandler handler = new(orderRepository.Object, customerRepository.Object);
 
         IOrderGettingHandler.Request request = new(1);
         HandlerResult<OrderBo> result = await handler.Handle(request, CancellationToken.None);
@@ -35,22 +32,14 @@ public class OrderGettingHandlerTests
     {
         Mock<IOrderRepository> orderRepository = new();
         orderRepository.Setup(repo => repo.Find(TestData.ORDER_ID, CancellationToken.None))
-            .Returns(TestData.GetTestOrder());
-
-        Mock<IRegionRepository> regionRepository = new();
-        regionRepository.Setup(repo => repo.Find(TestData.REGION_ID, CancellationToken.None))
-            .Returns(TestData.GetTestRegion());
-
-        Mock<IAddressRepository> addressRepository = new();
-        addressRepository.Setup(repo => repo.Find(TestData.ADDRESS_ID, CancellationToken.None))
-            .Returns(TestData.GetTestAddress());
+            .Returns(Task.FromResult((OrderDto?)TestData.GetTestOrder()));
 
         Mock<ICustomerRepository> customerRepository = new();
         customerRepository.Setup(repo => repo.Find(TestData.CUSTOMER_ID, CancellationToken.None))
-            .Returns(TestData.GetTestCustomer());
+            .Returns(Task.FromResult((CustomerDto?)TestData.GetTestCustomer()));
 
         OrderGettingHandler handler =
-            new(orderRepository.Object, regionRepository.Object, addressRepository.Object, customerRepository.Object);
+            new(orderRepository.Object, customerRepository.Object);
 
         IOrderGettingHandler.Request request = new(TestData.ORDER_ID);
         HandlerResult<OrderBo> result = await handler.Handle(request, CancellationToken.None);

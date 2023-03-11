@@ -10,9 +10,11 @@ using Ozon.Route256.Five.OrderService.Core.Handlers.OrdersByCustomerGet;
 using Ozon.Route256.Five.OrderService.Core.Handlers.OrdersGet;
 using Ozon.Route256.Five.OrderService.Core.Handlers.OrderStatusGet;
 using Ozon.Route256.Five.OrderService.Core.Handlers.RegionsGet;
+using Ozon.Route256.Five.OrderService.Core.Redis;
 using Ozon.Route256.Five.OrderService.Core.Repository;
 using Ozon.Route256.Five.OrderService.Core.Repository.Imp;
 using Ozon.Route256.Five.OrderService.Grpc;
+using Ozon.Route256.Five.OrderService.Kafka;
 using Ozon.Route256.Five.OrderService.Rest.Dto;
 using Ozon.Route256.Five.OrderService.Validators;
 
@@ -27,11 +29,17 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton<LoggerInterceptor>();
         services.AddScoped<ILogisticService, LogisticService>();
+        services.AddScoped<ICustomerService, CustomerService>();
 
         services.AddGrpcClient<SdService.SdServiceClient>(
                 options =>
                 {
-                    string? address = configuration.GetValue<string>("ROUTE256_SERVICE_DISCOVERY_ADDRESS");
+                    const string KEY = "ROUTE256_SERVICE_DISCOVERY_ADDRESS";
+                    string? address = configuration.GetValue<string>(KEY);
+                    if (string.IsNullOrWhiteSpace(address))
+                    {
+                        throw new NullReferenceException(KEY);
+                    }
                     options.Address = new Uri(address);
                 })
             .AddInterceptor<LoggerInterceptor>();
@@ -39,7 +47,25 @@ public static class ServiceCollectionExtensions
         services.AddGrpcClient<LogisticsSimulatorService.LogisticsSimulatorServiceClient>(
                 options =>
                 {
-                    string? address = configuration.GetValue<string>("ROUTE256_LOGISTICS_SIMULATOR_ADDRESS");
+                    const string KEY = "ROUTE256_LOGISTICS_SIMULATOR_ADDRESS";
+                    string? address = configuration.GetValue<string>(KEY);
+                    if (string.IsNullOrWhiteSpace(address))
+                    {
+                        throw new NullReferenceException(KEY);
+                    }
+                    options.Address = new Uri(address);
+                })
+            .AddInterceptor<LoggerInterceptor>();
+
+        services.AddGrpcClient<Customers.CustomersClient>(
+                options =>
+                {
+                    const string KEY = "ROUTE256_CUSTOMER_SERVICE_ADDRESS";
+                    string? address = configuration.GetValue<string>(KEY);
+                    if (string.IsNullOrWhiteSpace(address))
+                    {
+                        throw new NullReferenceException(KEY);
+                    }
                     options.Address = new Uri(address);
                 })
             .AddInterceptor<LoggerInterceptor>();
@@ -47,19 +73,27 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services)
+    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
+        const string KEY = "Redis:ConnectionString";
+        string connectionString = configuration.GetValue<string>(KEY);
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            throw new NullReferenceException(KEY);
+        }
+
         services
             .AddHandlers()
             .AddRepositories()
             .AddHostedService<SdConsumerHostedService>()
+            .AddRedis(connectionString)
+            .AddKafka(configuration)
             .AddSwaggerGen();
 
         services.AddSingleton<IDbStore, DbStore>();
 
         services.AddScoped<IValidator<OrdersByCustomerRequestDto>, OrdersByCustomerRequestDtoValidator>();
         services.AddScoped<IValidator<AggregatedOrdersRequestDto>, AggregatedOrdersRequestDtoValidator>();
-        services.AddScoped<IValidator<OrdersRequestDto>, OrdersRequestDtoValidator>();
 
         return services;
     }
@@ -68,10 +102,9 @@ public static class ServiceCollectionExtensions
     {
         services.AddSingleton<InMemoryStorage>();
 
-        services.AddScoped<IOrderRepository, OrderInMemoryRepository>();
+        services.AddScoped<IOrderRepository, OrderRedisRepository>();
         services.AddScoped<IRegionRepository, RegionInMemoryRepository>();
-        services.AddScoped<IAddressRepository, AddressInMemoryRepository>();
-        services.AddScoped<ICustomerRepository, CustomerInMemoryRepository>();
+        services.AddScoped<ICustomerRepository, CustomerRedisRepository>();
 
         return services;
     }

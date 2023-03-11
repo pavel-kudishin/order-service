@@ -5,8 +5,7 @@ namespace Ozon.Route256.Five.OrderService.Rest.Dto;
 public sealed class RegionDto
 {
     [Required]
-    public int Id { get; set; }
+    public string? Name { get; init; }
 
-    [Required]
-    public string? Name { get; set; }
+    public WarehouseDto? Warehouse { get; init; }
 }

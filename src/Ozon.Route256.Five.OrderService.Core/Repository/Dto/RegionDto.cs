@@ -1,3 +1,3 @@
 ﻿namespace Ozon.Route256.Five.OrderService.Core.Repository.Dto;
 
-public record RegionDto(int Id, string Name);
+public record RegionDto(string Name, WarehouseDto Warehouse);

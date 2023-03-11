@@ -5,7 +5,7 @@ namespace Ozon.Route256.Five.OrderService.Core.Repository.Extensions;
 
 public static class MappingExtensions
 {
-    public static CustomerBo ToCustomerBo(this CustomerDto customer, AddressBo? address, AddressBo[]? addresses)
+    public static CustomerBo ToCustomerBo(this CustomerDto customer)
     {
         return new CustomerBo()
         {
@@ -14,17 +14,16 @@ public static class MappingExtensions
             LastName = customer.LastName,
             MobileNumber = customer.MobileNumber,
             Email = customer.Email,
-            Address = address,
-            Addresses = addresses,
+            DefaultAddress = customer.DefaultAddress.ToAddressBo(),
+            Addresses = customer.Addresses.ToAddressesBo(),
         };
     }
 
-    public static AddressBo ToAddressBo(this AddressDto address, RegionBo region)
+    public static AddressBo ToAddressBo(this AddressDto address)
     {
         return new AddressBo()
         {
-            Id = address.Id,
-            Region = region,
+            Region = address.Region,
             Street = address.Street,
             Building = address.Building,
             Apartment = address.Apartment,
@@ -34,59 +33,72 @@ public static class MappingExtensions
         };
     }
 
+    public static AddressBo[] ToAddressesBo(this AddressDto[] addresses)
+    {
+        return addresses.Select(a => a.ToAddressBo()).ToArray();
+    }
+
     public static RegionBo ToRegionBo(this RegionDto region)
     {
         return new RegionBo()
         {
-            Id = region.Id,
             Name = region.Name,
+            Warehouse = region.Warehouse.ToWarehouseBo(),
         };
     }
 
-    public static OrderBo ToOrderBo(this OrderDto order, AddressBo? address, CustomerBo? customer)
+    public static WarehouseBo ToWarehouseBo(this WarehouseDto region)
+    {
+        return new WarehouseBo()
+        {
+            Latitude = region.Latitude,
+            Longitude = region.Longitude,
+        };
+    }
+
+    public static OrderBo ToOrderBo(this OrderDto order)
     {
         return new OrderBo()
         {
             Id = order.Id,
-            ArticlesCount = order.ArticlesCount,
+            GoodsCount = order.GoodsCount,
             TotalPrice = order.TotalPrice,
             TotalWeight = order.TotalWeight,
-            OrderType = order.OrderType.ToBoOrderType(),
+            Source = order.Source.OrderSourceBo(),
             DateCreated = order.DateCreated,
-            Status = order.Status,
-            Customer = customer,
-            Address = address,
+            State = order.State.ToOrderStateBo(),
+            Customer = order.Customer.ToCustomerBo(),
+            Address = order.Address.ToAddressBo(),
             Phone = order.Phone
 
         };
     }
 
-    public static OrderTypesBo ToBoOrderType(this OrderTypesDto orderType)
+    public static OrderSourceBo OrderSourceBo(this OrderSourceDto source)
     {
-        return orderType switch
+        return source switch
         {
-            OrderTypesDto.Pickup => OrderTypesBo.Pickup,
-            OrderTypesDto.Delivery => OrderTypesBo.Delivery,
-            _ => throw new ArgumentOutOfRangeException(nameof(orderType), orderType, null)
+            OrderSourceDto.WebSite => BusinessObjects.OrderSourceBo.WebSite,
+            OrderSourceDto.Mobile => BusinessObjects.OrderSourceBo.Mobile,
+            OrderSourceDto.Api => BusinessObjects.OrderSourceBo.Api,
+            _ => throw new ArgumentOutOfRangeException(nameof(source), source, null)
         };
     }
 
-    public static OrderTypesDto ToDtoOrderType(this OrderTypesBo orderType)
+    public static OrderStateBo ToOrderStateBo(this OrderStateDto source)
     {
-        return orderType switch
+        return source switch
         {
-            OrderTypesBo.Pickup => OrderTypesDto.Pickup,
-            OrderTypesBo.Delivery => OrderTypesDto.Delivery,
-            _ => throw new ArgumentOutOfRangeException(nameof(orderType), orderType, null)
+            OrderStateDto.Created => OrderStateBo.Created,
+            OrderStateDto.SentToCustomer => OrderStateBo.SentToCustomer,
+            OrderStateDto.Delivered => OrderStateBo.Delivered,
+            OrderStateDto.Lost => OrderStateBo.Lost,
+            OrderStateDto.Cancelled => OrderStateBo.Cancelled,
+            _ => throw new ArgumentOutOfRangeException(nameof(source), source, null)
         };
     }
 
-    public static OrderTypesDto[]? ToDtoOrderTypes(this OrderTypesBo[]? orderTypes)
-    {
-        return orderTypes?.Select(o => o.ToDtoOrderType()).ToArray();
-    }
-
-    public static OrderingDirectionDto ToDtoDirection(this OrderingDirectionBo direction)
+    public static OrderingDirectionDto ToOrderingDirectionDto(this OrderingDirectionBo direction)
     {
         return direction switch
         {
@@ -96,89 +108,31 @@ public static class MappingExtensions
         };
     }
 
-    public static IEnumerable<CustomerBo> ToCustomersBo(
-        this IEnumerable<CustomerDto> customers,
-        IReadOnlyDictionary<int, AddressDto> addressesDictionary,
-        IReadOnlyDictionary<int, RegionDto> regionsDictionary)
+    public static OrderSourceDto ToOrderSourceDto(this OrderSourceBo source)
     {
-        foreach (CustomerDto customer in customers)
+        return source switch
         {
-            CustomerBo customerBo = customer.ToCustomerBo(addressesDictionary, regionsDictionary);
-            yield return customerBo;
-        }
+            BusinessObjects.OrderSourceBo.WebSite => OrderSourceDto.WebSite,
+            BusinessObjects.OrderSourceBo.Mobile => OrderSourceDto.Mobile,
+            BusinessObjects.OrderSourceBo.Api => OrderSourceDto.Api,
+            _ => throw new ArgumentOutOfRangeException(nameof(source), source, null)
+        };
     }
 
-    public static IEnumerable<OrderBo> ToOrdersBo(
-        this IEnumerable<OrderDto> orders,
-        IReadOnlyDictionary<int, AddressDto>? addressesDictionary,
-        IReadOnlyDictionary<int, RegionDto> regionsDictionary,
-        IReadOnlyDictionary<int, CustomerDto>? customersDictionary)
+    public static OrderSourceDto[]? ToOrderSourcesDto(this IEnumerable<OrderSourceBo>? sources)
     {
-        foreach (OrderDto order in orders)
-        {
-            OrderBo orderBo = order.ToOrderBo(addressesDictionary, regionsDictionary, customersDictionary);
-            yield return orderBo;
-        }
+        return sources?.Select(c => c.ToOrderSourceDto()).ToArray();
     }
 
-    private static OrderBo ToOrderBo(
-        this OrderDto order,
-        IReadOnlyDictionary<int, AddressDto>? addressesDictionary,
-        IReadOnlyDictionary<int, RegionDto> regionsDictionary,
-        IReadOnlyDictionary<int, CustomerDto>? customersDictionary)
+    public static CustomerBo[] ToCustomersBo(
+        this IEnumerable<CustomerDto> customers)
     {
-        AddressBo? address = addressesDictionary != null
-            ? GetAddressBo(order.AddressId, addressesDictionary, regionsDictionary)
-            : null;
-
-        CustomerBo? customer = customersDictionary != null
-            ? GetCustomerBo(order.CustomerId, customersDictionary, addressesDictionary, regionsDictionary)
-            : null;
-
-        OrderBo orderBo = order.ToOrderBo(address, customer);
-        return orderBo;
+        return customers.Select(c => c.ToCustomerBo()).ToArray();
     }
 
-    private static CustomerBo GetCustomerBo(int customerId,
-        IReadOnlyDictionary<int, CustomerDto> customersDictionary,
-        IReadOnlyDictionary<int, AddressDto>? addressesDictionary,
-        IReadOnlyDictionary<int, RegionDto> regionsDictionary)
+    public static OrderBo[] ToOrdersBo(this IEnumerable<OrderDto> orders)
     {
-        return customersDictionary[customerId].ToCustomerBo(addressesDictionary, regionsDictionary);
-    }
-
-    public static CustomerBo ToCustomerBo(
-        this CustomerDto customer,
-        IReadOnlyDictionary<int, AddressDto>? addressesDictionary,
-        IReadOnlyDictionary<int, RegionDto> regionsDictionary)
-    {
-        if (addressesDictionary == null)
-        {
-            return customer.ToCustomerBo(address: null, addresses: null);
-        }
-
-        AddressBo? defaultAddressBo = GetAddressBo(customer.AddressId, addressesDictionary, regionsDictionary);
-
-        AddressBo[] addresses = new AddressBo[customer.Addresses.Length];
-        for (int i = 0; i < customer.Addresses.Length; i++)
-        {
-            AddressBo address = GetAddressBo(customer.Addresses[i], addressesDictionary, regionsDictionary);
-            addresses[i] = address;
-        }
-
-        CustomerBo customerBo = customer.ToCustomerBo(defaultAddressBo, addresses);
-        return customerBo;
-    }
-
-    public static AddressBo GetAddressBo(
-        int addressId,
-        IReadOnlyDictionary<int, AddressDto> addressesDictionary,
-        IReadOnlyDictionary<int, RegionDto> regionsDictionary)
-    {
-        AddressDto addressDto = addressesDictionary[addressId];
-        RegionDto regionDto = regionsDictionary[addressDto.RegionId];
-        AddressBo addressBo = addressDto.ToAddressBo(regionDto.ToRegionBo());
-        return addressBo;
+        return orders.Select(o => o.ToOrderBo()).ToArray();
     }
 
     public static RegionBo[] ToRegionsBo(
@@ -187,21 +141,15 @@ public static class MappingExtensions
         return regions.Select(r => r.ToRegionBo()).ToArray();
     }
 
-    public static IEnumerable<AggregatedOrdersResponseBo> ToAggregatedOrdersResponseBo(
-        this AggregateOrdersDto[] array,
-        Dictionary<int, RegionDto> regionsDictionary)
+    public static AggregatedOrdersResponseBo[] ToAggregatedOrdersResponseBo(this AggregateOrdersDto[] array)
     {
-        foreach (AggregateOrdersDto aggregateOrdersDto in array)
+        return array.Select(a => new AggregatedOrdersResponseBo()
         {
-            RegionDto regionDto = regionsDictionary[aggregateOrdersDto.RegionId];
-            yield return new()
-            {
-                Region = regionDto.ToRegionBo(),
-                TotalWeight = aggregateOrdersDto.TotalWeight,
-                TotalOrdersPrice = aggregateOrdersDto.TotalOrdersPrice,
-                CustomersCount = aggregateOrdersDto.CustomersCount,
-                OrdersCount = aggregateOrdersDto.OrdersCount,
-            };
-        }
+            Region = a.Region,
+            TotalWeight = a.TotalWeight,
+            TotalOrdersPrice = a.TotalOrdersPrice,
+            CustomersCount = a.CustomersCount,
+            OrdersCount = a.OrdersCount,
+        }).ToArray();
     }
 }

@@ -4,6 +4,7 @@ using Ozon.Route256.Five.OrderService.Core;
 using Ozon.Route256.Five.OrderService.Core.Handlers.OrderCancel;
 using Ozon.Route256.Five.OrderService.Core.Handlers.ResultTypes;
 using Ozon.Route256.Five.OrderService.Core.Repository;
+using Ozon.Route256.Five.OrderService.Core.Repository.Dto;
 
 namespace Ozon.Route256.Five.OrderService.Tests.Handlers;
 
@@ -14,7 +15,7 @@ public class OrderCancellationHandlerTests
     {
         Mock<IOrderRepository> orderRepository = new();
         orderRepository.Setup(repo => repo.Find(TestData.ORDER_ID, CancellationToken.None))
-            .Returns(TestData.GetTestOrder());
+            .Returns(Task.FromResult((OrderDto?)TestData.GetTestOrder()));
 
         Mock<ILogisticService> client = new();
         client.Setup(repo => repo.OrderCancelAsync(TestData.ORDER_ID, CancellationToken.None))

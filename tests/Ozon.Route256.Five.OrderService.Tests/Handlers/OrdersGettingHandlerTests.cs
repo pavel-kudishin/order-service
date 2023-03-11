@@ -14,25 +14,16 @@ public class OrdersGettingHandlerTests
     public async Task GetOrders()
     {
         Mock<IRegionRepository> regionRepository = new();
-        regionRepository.Setup(repo => repo.FindMany(new []{TestData.REGION_ID}, CancellationToken.None))
-            .Returns(TestData.GetTestRegions());
+        regionRepository.Setup(repo => repo.FindMany(new []{TestData.REGION_NAME}, CancellationToken.None))
+            .Returns(Task.FromResult(TestData.GetTestRegions()));
         regionRepository.Setup(repo => repo.GetAll(CancellationToken.None))
-            .Returns(TestData.GetTestRegions());
-
-        Mock<IAddressRepository> addressRepository = new();
-        addressRepository.Setup(repo => repo.FindMany(new []{TestData.ADDRESS_ID}, CancellationToken.None))
-            .Returns(TestData.GetTestAddresses());
-
-        Mock<ICustomerRepository> customerRepository = new();
-        customerRepository.Setup(repo => repo.FindMany(new []{TestData.CUSTOMER_ID}, CancellationToken.None))
-            .Returns(TestData.GetTestCustomers());
+            .Returns(Task.FromResult(TestData.GetTestRegions()));
 
         Mock<IOrderRepository> orderRepository = new();
         orderRepository.Setup(repo => repo.Filter(null, null, 0, 10, OrderingDirectionDto.Asc, CancellationToken.None))
-            .Returns(TestData.GetTestOrders());
+            .Returns(Task.FromResult(TestData.GetTestOrders()));
 
-        OrdersGettingHandler handler =
-            new(orderRepository.Object, regionRepository.Object, addressRepository.Object, customerRepository.Object);
+        OrdersGettingHandler handler = new(orderRepository.Object, regionRepository.Object);
 
         IOrdersGettingHandler.Request request = new(null, null, 0, 10, OrderingDirectionBo.Asc);
         HandlerResult<OrderBo[]> result = await handler.Handle(request, CancellationToken.None);

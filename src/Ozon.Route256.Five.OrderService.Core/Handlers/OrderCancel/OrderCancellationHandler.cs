@@ -1,3 +1,4 @@
+using Ozon.Route256.Five.OrderService.Core.BusinessObjects;
 using Ozon.Route256.Five.OrderService.Core.Handlers.ResultTypes;
 using Ozon.Route256.Five.OrderService.Core.Repository;
 using Ozon.Route256.Five.OrderService.Core.Repository.Dto;
@@ -35,7 +36,7 @@ public class OrderCancellationHandler : IOrderCancellationHandler
 
         OrderDto cancelledOrder = order with
         {
-            Status = "Cancelled",
+            State = OrderStateDto.Cancelled,
         };
 
         await _orderRepository.Update(cancelledOrder, token);

@@ -2,6 +2,6 @@
 
 public class RegionBo
 {
-    public int Id { get; init; }
     public string Name { get; init; } = string.Empty;
+    public WarehouseBo? Warehouse { get; init; }
 }

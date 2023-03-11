@@ -26,22 +26,20 @@ public class OrderAggregationHandler: IOrderAggregationHandler
     {
         RegionDto[] regions = await _regionRepository.GetAll(token);
 
-        if (request.RegionIds != null && request.RegionIds.Length > 0)
+        if (request.Regions != null && request.Regions.Length > 0)
         {
-            List<int> list = request.RegionIds.Except(regions.Select(r => r.Id)).ToList();
+            List<string> list = request.Regions.Except(regions.Select(r => r.Name)).ToList();
             if (list.Count > 0)
             {
                 return HandlerResult<AggregatedOrdersResponseBo[]>.FromError(
-                    new OrdersGettingException($"Regions #{string.Join(',', list)} not found"));
+                    new OrdersGettingException($"Regions {string.Join(',', list)} not found"));
             }
         }
 
         AggregateOrdersDto[] result = await _orderRepository.AggregateOrders(
-            request.RegionIds, request.StartDate, request.EndDate, token);
+            request.Regions, request.StartDate, request.EndDate, token);
 
-        Dictionary<int, RegionDto> regionsDictionary = regions.ToDictionary(a => a.Id);
-
-        IEnumerable<AggregatedOrdersResponseBo> resultBo = result.ToAggregatedOrdersResponseBo(regionsDictionary);
-        return HandlerResult<AggregatedOrdersResponseBo[]>.FromValue(resultBo.ToArray());
+        AggregatedOrdersResponseBo[] resultBo = result.ToAggregatedOrdersResponseBo();
+        return HandlerResult<AggregatedOrdersResponseBo[]>.FromValue(resultBo);
     }
 }

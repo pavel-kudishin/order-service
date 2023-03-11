@@ -8,15 +8,15 @@ public sealed class AggregatedOrdersRequestDto
     /// Дата начала
     /// </summary>
     [Required]
-    public DateTime StartDate { get; set; }
+    public DateTime StartDate { get; init; }
 
     /// <summary>
     /// Дата окончания
     /// </summary>
-    public DateTime? EndDate { get; set; }
+    public DateTime? EndDate { get; init; }
 
     /// <summary>
-    /// ИД регионов для фильтрации
+    /// Регионы для фильтрации
     /// </summary>
-    public int[]? RegionIds { get; set; }
+    public string[]? Regions { get; init; }
 }

@@ -65,12 +65,12 @@ namespace Ozon.Route256.Five.OrderService.Rest.Controllers
         [Route("[action]")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<OrderStatusResponseDto>> GetOrderStatus(
+        public async Task<ActionResult<OrderStatusResponseDto>> GetOrderState(
             [FromQuery][Required] long orderId,
             [FromServices] IOrderStatusGettingHandler handler)
         {
             IOrderStatusGettingHandler.Request handlerRequest = new(orderId);
-            HandlerResult<string> result = await handler.Handle(handlerRequest, HttpContext.RequestAborted);
+            HandlerResult<OrderStateBo> result = await handler.Handle(handlerRequest, HttpContext.RequestAborted);
 
             if (result.Success == false)
             {
@@ -83,7 +83,7 @@ namespace Ozon.Route256.Five.OrderService.Rest.Controllers
 
             return Ok(new OrderStatusResponseDto()
             {
-                StatusName = result.Value,
+                State = result.Value.ToOrderStateDto(),
             });
         }
 
@@ -100,17 +100,8 @@ namespace Ozon.Route256.Five.OrderService.Rest.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<IEnumerable<OrderDto>>> GetOrders(
             [FromBody][Required] OrdersRequestDto request,
-            [FromServices] IValidator<OrdersRequestDto> validator,
             [FromServices] IOrdersGettingHandler handler)
         {
-            ValidationResult validationResult =
-                await validator.ValidateAsync(request, HttpContext.RequestAborted);
-
-            if (validationResult.IsValid == false)
-            {
-                return BadRequest(validationResult.ToString());
-            }
-
             IOrdersGettingHandler.Request handlerRequest = request.ToOrdersGettingHandlerRequest();
             HandlerResult<OrderBo[]> result = await handler.Handle(handlerRequest, HttpContext.RequestAborted);
 

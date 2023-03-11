@@ -2,14 +2,14 @@
 
 public record OrderDto(
     long Id,
-    int ArticlesCount,
+    int GoodsCount,
     decimal TotalPrice,
     decimal TotalWeight,
-    OrderTypesDto OrderType,
+    OrderSourceDto Source,
     DateTime DateCreated,
-    int RegionId,
-    string Status,
-    int CustomerId,
-    int AddressId,
+    string Region,
+    OrderStateDto State,
+    CustomerDto Customer,
+    AddressDto Address,
     string Phone
 );

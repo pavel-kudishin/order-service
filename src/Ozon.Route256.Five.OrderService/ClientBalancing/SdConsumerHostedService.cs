@@ -9,9 +9,9 @@ public sealed class SdConsumerHostedService : BackgroundService
     private readonly ILogger<SdConsumerHostedService> _logger;
 
     public SdConsumerHostedService(
-		IDbStore dbStore,
-		SdService.SdServiceClient client,
-		ILogger<SdConsumerHostedService> logger)
+        IDbStore dbStore,
+        SdService.SdServiceClient client,
+        ILogger<SdConsumerHostedService> logger)
     {
         _dbStore = dbStore;
         _client = client;
@@ -33,8 +33,8 @@ public sealed class SdConsumerHostedService : BackgroundService
             {
                 while (await stream.ResponseStream.MoveNext(stoppingToken))
                 {
-					DbResourcesResponse response = stream.ResponseStream.Current;
-					_logger.LogDebug("Получены новые данные из SD. Timestamp {Timestamp}", response.LastUpdated.ToDateTime());
+                    DbResourcesResponse response = stream.ResponseStream.Current;
+                    _logger.LogDebug("Получены новые данные из SD. Timestamp {Timestamp}", response.LastUpdated.ToDateTime());
 
                     List<DbEndpoint> endpoints = new List<DbEndpoint>(response.Replicas.Capacity);
 
@@ -50,6 +50,7 @@ public sealed class SdConsumerHostedService : BackgroundService
             catch (RpcException exc)
             {
                 _logger.LogError(exc, "Не удалось связаться с SD");
+                await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
             }
         }
     }

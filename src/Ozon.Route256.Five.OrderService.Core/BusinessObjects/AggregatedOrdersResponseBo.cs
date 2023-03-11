@@ -2,7 +2,7 @@
 
 public class AggregatedOrdersResponseBo
 {
-    public RegionBo? Region { get; init; }
+    public string Region { get; init; } = string.Empty;
 
     public int OrdersCount { get; init; }
 

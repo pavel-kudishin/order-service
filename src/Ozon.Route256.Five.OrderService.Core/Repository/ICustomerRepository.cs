@@ -8,6 +8,6 @@ public interface ICustomerRepository
 
     Task<CustomerDto[]> GetAll(CancellationToken token);
 
-    Task<CustomerDto[]> FindMany(IEnumerable<int> ids, CancellationToken token);
+    Task<CustomerDto[]> FindMany(IEnumerable<int> customerIds, CancellationToken token);
 
 }

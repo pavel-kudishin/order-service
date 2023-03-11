@@ -3,12 +3,12 @@
 public class OrderBo
 {
     public long Id { get; init; }
-    public int ArticlesCount { get; init; }
+    public int GoodsCount { get; init; }
     public decimal TotalPrice { get; init; }
     public decimal TotalWeight { get; init; }
-    public OrderTypesBo OrderType { get; init; }
+    public OrderSourceBo Source { get; init; }
     public DateTime DateCreated { get; init; }
-    public string Status { get; init; } = string.Empty;
+    public OrderStateBo State { get; init; }
     public CustomerBo? Customer { get; init; }
     public AddressBo? Address { get; init; }
     public string Phone { get; init; } = string.Empty;

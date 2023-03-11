@@ -14,7 +14,7 @@ public class RegionsGettingHandlerTests
     {
         Mock<IRegionRepository> regionRepository = new();
         regionRepository.Setup(repo => repo.GetAll(CancellationToken.None))
-            .Returns(TestData.GetTestRegions());
+            .Returns(Task.FromResult(TestData.GetTestRegions()));
 
         RegionsGettingHandler handler = new(regionRepository.Object);
 
