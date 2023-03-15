@@ -43,27 +43,11 @@ public class BackgroundKafkaConsumer<TKey, TMessage, THandler, TResult>
         _topic = consumerSettings.Topic;
     }
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override async Task ExecuteAsync(CancellationToken token)
     {
         // Workaround to avoid blocking of main host starting
         await Task.Yield();
 
-        while (stoppingToken.IsCancellationRequested == false)
-        {
-            try
-            {
-                await Consume(stoppingToken);
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "Error in topic {Topic} during kafka consume", _topic);
-                await Task.Delay(_timeoutForRetry, stoppingToken);
-            }
-        }
-    }
-
-    private async Task Consume(CancellationToken token)
-    {
         using IConsumer<TKey, TMessage>? consumer =
             new ConsumerBuilder<TKey, TMessage>(_consumerConfig)
                 .SetValueDeserializer(_messageDeserializer)
@@ -75,14 +59,30 @@ public class BackgroundKafkaConsumer<TKey, TMessage, THandler, TResult>
 
         while (token.IsCancellationRequested == false)
         {
-            ConsumeResult<TKey, TMessage> consumeResult = consumer.Consume(token);
-            await _serviceProvider
-                .CreateScope()
-                .ServiceProvider
-                .GetRequiredService<THandler>()
-                .Handle(consumeResult.Message.Key, consumeResult.Message.Value, token);
+            try
+            {
+                ConsumeResult<TKey, TMessage> consumeResult = consumer.Consume(token);
+                using (IServiceScope scope = _serviceProvider.CreateScope())
+                {
+                    IServiceProvider serviceProvider = scope.ServiceProvider;
+                    THandler handler = serviceProvider.GetRequiredService<THandler>();
+                    try
+                    {
+                        await handler.Handle(consumeResult.Message.Key, consumeResult.Message.Value, token);
+                    }
+                    catch (Exception e)
+                    {
+                        _logger.LogError(e, $"Failed to handle message with key {consumeResult.Message.Key} in topic {{Topic}}", _topic);
+                    }
+                }
 
-            consumer.Commit();
+                consumer.Commit();
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Error in topic {Topic} during kafka consume", _topic);
+                await Task.Delay(_timeoutForRetry, token);
+            }
         }
     }
 }

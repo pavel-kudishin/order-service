@@ -21,7 +21,7 @@ public class LogisticService: ILogisticService
         {
             Id = orderId,
         };
-        CancelResult result = await _client.OrderCancelAsync(clientRequest, null, null, token);
+        CancelResult result = await _client.OrderCancelAsync(clientRequest, cancellationToken: token);
 
         if (result.Success == false)
         {

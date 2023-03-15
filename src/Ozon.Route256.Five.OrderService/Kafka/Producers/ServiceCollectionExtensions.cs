@@ -20,7 +20,7 @@ public static class ServiceCollectionExtensions
         ));
 
         services.Configure<NewOrderSettings>(configuration.GetSection(NewOrderSettings.SECTIONS));
-        services.AddTransient<INewOrdersKafkaPublisher, NewOrdersKafkaPublisher>();
+        services.AddScoped<INewOrdersKafkaPublisher, NewOrdersKafkaPublisher>();
 
         return services;
     }

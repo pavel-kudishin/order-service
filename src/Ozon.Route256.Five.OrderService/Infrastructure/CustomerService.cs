@@ -23,7 +23,7 @@ public class CustomerService : ICustomerService
         };
         try
         {
-            Customer customer = await _client.GetCustomerAsync(request, null, null, token);
+            Customer customer = await _client.GetCustomerAsync(request, cancellationToken: token);
             CustomerDto customerDto = customer.ToCustomerDto();
             return customerDto;
         }
@@ -40,7 +40,7 @@ public class CustomerService : ICustomerService
     public async Task<CustomerDto[]> GetCustomersAsync(CancellationToken token)
     {
         Empty request = new Empty();
-        GetCustomersResponse customers = await _client.GetCustomersAsync(request, null, null, token);
+        GetCustomersResponse customers = await _client.GetCustomersAsync(request, cancellationToken: token);
         CustomerDto[] customerDto = customers.Customers.ToCustomersDto();
         return customerDto;
     }

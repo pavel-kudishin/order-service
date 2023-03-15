@@ -5,6 +5,9 @@ namespace Ozon.Route256.Five.OrderService.Core.Repository.Imp;
 
 public class InMemoryStorage
 {
+    public readonly ConcurrentDictionary<long, OrderDto> Orders =
+        new(concurrencyLevel: 3, capacity: 100);
+
     public readonly ConcurrentDictionary<string, RegionDto> Regions =
         new(concurrencyLevel: 3, capacity: 3);
 

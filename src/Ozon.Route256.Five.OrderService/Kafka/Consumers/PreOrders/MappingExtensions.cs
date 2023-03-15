@@ -1,5 +1,4 @@
-﻿using Ozon.Route256.Five.OrderService.Core.BusinessObjects;
-using Ozon.Route256.Five.OrderService.Core.Repository.Dto;
+﻿using Ozon.Route256.Five.OrderService.Core.Repository.Dto;
 
 namespace Ozon.Route256.Five.OrderService.Kafka.Consumers.PreOrders;
 

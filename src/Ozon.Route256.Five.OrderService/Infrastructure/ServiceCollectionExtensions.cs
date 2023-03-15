@@ -34,12 +34,7 @@ public static class ServiceCollectionExtensions
         services.AddGrpcClient<SdService.SdServiceClient>(
                 options =>
                 {
-                    const string KEY = "ROUTE256_SERVICE_DISCOVERY_ADDRESS";
-                    string? address = configuration.GetValue<string>(KEY);
-                    if (string.IsNullOrWhiteSpace(address))
-                    {
-                        throw new NullReferenceException(KEY);
-                    }
+                    string address = configuration.GetValue<string>("ROUTE256_SERVICE_DISCOVERY_ADDRESS");
                     options.Address = new Uri(address);
                 })
             .AddInterceptor<LoggerInterceptor>();
@@ -47,12 +42,7 @@ public static class ServiceCollectionExtensions
         services.AddGrpcClient<LogisticsSimulatorService.LogisticsSimulatorServiceClient>(
                 options =>
                 {
-                    const string KEY = "ROUTE256_LOGISTICS_SIMULATOR_ADDRESS";
-                    string? address = configuration.GetValue<string>(KEY);
-                    if (string.IsNullOrWhiteSpace(address))
-                    {
-                        throw new NullReferenceException(KEY);
-                    }
+                    string address = configuration.GetValue<string>("ROUTE256_LOGISTICS_SIMULATOR_ADDRESS");
                     options.Address = new Uri(address);
                 })
             .AddInterceptor<LoggerInterceptor>();
@@ -60,12 +50,7 @@ public static class ServiceCollectionExtensions
         services.AddGrpcClient<Customers.CustomersClient>(
                 options =>
                 {
-                    const string KEY = "ROUTE256_CUSTOMER_SERVICE_ADDRESS";
-                    string? address = configuration.GetValue<string>(KEY);
-                    if (string.IsNullOrWhiteSpace(address))
-                    {
-                        throw new NullReferenceException(KEY);
-                    }
+                    string address = configuration.GetValue<string>("ROUTE256_CUSTOMER_SERVICE_ADDRESS");
                     options.Address = new Uri(address);
                 })
             .AddInterceptor<LoggerInterceptor>();
@@ -75,12 +60,7 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        const string KEY = "Redis:ConnectionString";
-        string connectionString = configuration.GetValue<string>(KEY);
-        if (string.IsNullOrWhiteSpace(connectionString))
-        {
-            throw new NullReferenceException(KEY);
-        }
+        string connectionString = configuration.GetValue<string>("Redis:ConnectionString");
 
         services
             .AddHandlers()
@@ -102,7 +82,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddSingleton<InMemoryStorage>();
 
-        services.AddScoped<IOrderRepository, OrderRedisRepository>();
+        services.AddScoped<IOrderRepository, OrderInMemoryRepository>();
         services.AddScoped<IRegionRepository, RegionInMemoryRepository>();
         services.AddScoped<ICustomerRepository, CustomerRedisRepository>();
 

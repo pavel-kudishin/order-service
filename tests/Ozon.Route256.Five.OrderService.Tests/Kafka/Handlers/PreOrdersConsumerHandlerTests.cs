@@ -1,7 +1,6 @@
 ﻿using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
-using Ozon.Route256.Five.OrderService.Core.BusinessObjects;
 using Ozon.Route256.Five.OrderService.Core.Repository;
 using Ozon.Route256.Five.OrderService.Core.Repository.Dto;
 using Ozon.Route256.Five.OrderService.Kafka.Consumers.PreOrders;

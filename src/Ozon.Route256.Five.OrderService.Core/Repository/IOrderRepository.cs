@@ -16,6 +16,6 @@ public interface IOrderRepository
     Task<OrderDto[]> Filter(string[]? regions, OrderSourceDto[]? sources, int pageNumber,
         int itemsPerPage, OrderingDirectionDto orderingDirection, CancellationToken token);
 
-    Task<AggregateOrdersDto[]> AggregateOrders(string[]? regionIds, DateTime startDate,
+    Task<AggregateOrdersDto[]> AggregateOrders(string[]? regions, DateTime startDate,
         DateTime? endDate, CancellationToken token);
 }
