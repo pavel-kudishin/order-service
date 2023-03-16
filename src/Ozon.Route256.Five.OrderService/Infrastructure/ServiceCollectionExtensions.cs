@@ -31,27 +31,39 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ILogisticService, LogisticService>();
         services.AddScoped<ICustomerService, CustomerService>();
 
+        const string SERVICE_DISCOVERY_ADDRESS_KEY = "ROUTE256_SERVICE_DISCOVERY_ADDRESS";
+        string serviceDiscoveryAddress =
+            configuration.GetValue<string>(SERVICE_DISCOVERY_ADDRESS_KEY)
+            ?? throw new InvalidConfigurationException(SERVICE_DISCOVERY_ADDRESS_KEY);
+
+        const string LOGISTICS_SIMULATOR_ADDRESS_KEY = "ROUTE256_LOGISTICS_SIMULATOR_ADDRESS";
+        string logisticsSimulatorAddress =
+            configuration.GetValue<string>(LOGISTICS_SIMULATOR_ADDRESS_KEY)
+            ?? throw new InvalidConfigurationException(LOGISTICS_SIMULATOR_ADDRESS_KEY);
+
+        const string CUSTOMER_SERVICE_ADDRESS_KEY = "ROUTE256_CUSTOMER_SERVICE_ADDRESS";
+        string customerServiceAddress =
+            configuration.GetValue<string>(CUSTOMER_SERVICE_ADDRESS_KEY)
+            ?? throw new InvalidConfigurationException(CUSTOMER_SERVICE_ADDRESS_KEY);
+
         services.AddGrpcClient<SdService.SdServiceClient>(
                 options =>
                 {
-                    string address = configuration.GetValue<string>("ROUTE256_SERVICE_DISCOVERY_ADDRESS");
-                    options.Address = new Uri(address);
+                    options.Address = new Uri(serviceDiscoveryAddress);
                 })
             .AddInterceptor<LoggerInterceptor>();
 
         services.AddGrpcClient<LogisticsSimulatorService.LogisticsSimulatorServiceClient>(
                 options =>
                 {
-                    string address = configuration.GetValue<string>("ROUTE256_LOGISTICS_SIMULATOR_ADDRESS");
-                    options.Address = new Uri(address);
+                    options.Address = new Uri(logisticsSimulatorAddress);
                 })
             .AddInterceptor<LoggerInterceptor>();
 
         services.AddGrpcClient<Customers.CustomersClient>(
                 options =>
                 {
-                    string address = configuration.GetValue<string>("ROUTE256_CUSTOMER_SERVICE_ADDRESS");
-                    options.Address = new Uri(address);
+                    options.Address = new Uri(customerServiceAddress);
                 })
             .AddInterceptor<LoggerInterceptor>();
 
@@ -60,13 +72,11 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        string connectionString = configuration.GetValue<string>("Redis:ConnectionString");
-
         services
             .AddHandlers()
             .AddRepositories()
             .AddHostedService<SdConsumerHostedService>()
-            .AddRedis(connectionString)
+            .AddRedis(configuration)
             .AddKafka(configuration)
             .AddSwaggerGen();
 

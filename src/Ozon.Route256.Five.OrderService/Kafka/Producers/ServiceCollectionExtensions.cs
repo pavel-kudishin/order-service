@@ -1,3 +1,4 @@
+using Ozon.Route256.Five.OrderService.Core;
 using Ozon.Route256.Five.OrderService.Kafka.Producers.NewOrders;
 using Ozon.Route256.Five.OrderService.Kafka.Settings;
 
@@ -10,8 +11,9 @@ public static class ServiceCollectionExtensions
         IConfiguration configuration,
         KafkaSettings kafkaSettings)
     {
-        ProducerSettings? producerSettings = configuration.GetSection("Kafka:Producer")
-            .Get<ProducerSettings>();
+        const string KAFKA_PRODUCER_SECTION = "Kafka:Producer";
+        ProducerSettings? producerSettings = configuration.GetSection(KAFKA_PRODUCER_SECTION)
+            .Get<ProducerSettings>() ?? throw new InvalidConfigurationException(KAFKA_PRODUCER_SECTION);
 
         services.AddSingleton<IKafkaProducer, KafkaProducer>(sp => new KafkaProducer(
             sp.GetRequiredService<ILogger<KafkaProducer>>(),

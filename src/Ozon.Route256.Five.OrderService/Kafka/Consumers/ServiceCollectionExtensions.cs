@@ -1,4 +1,5 @@
 ﻿using Confluent.Kafka;
+using Ozon.Route256.Five.OrderService.Core;
 using Ozon.Route256.Five.OrderService.Kafka.Consumers.BackgroundConsumer;
 using Ozon.Route256.Five.OrderService.Kafka.Settings;
 
@@ -15,9 +16,10 @@ public static class ServiceCollectionExtensions
         IDeserializer<TMessage> messageDeserializer)
         where THandler : class, IKafkaConsumerHandler<TKey, TMessage, TResult>
     {
+        string section = $"Kafka:Consumer:{consumerType.Name}";
         ConsumerSettings consumerSettings = configuration
-            .GetSection($"Kafka:Consumer:{consumerType.Name}")
-            .Get<ConsumerSettings>();
+            .GetSection(section)
+            .Get<ConsumerSettings>() ?? throw new InvalidConfigurationException(section);
 
         if (consumerSettings.Enabled == false)
         {

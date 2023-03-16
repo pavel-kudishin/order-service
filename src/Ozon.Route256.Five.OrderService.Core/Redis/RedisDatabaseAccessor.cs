@@ -1,4 +1,6 @@
 ﻿using System.Net;
+using Microsoft.Extensions.Options;
+using Ozon.Route256.Five.OrderService.Core.Redis.Settings;
 using StackExchange.Redis;
 
 namespace Ozon.Route256.Five.OrderService.Core.Redis;
@@ -7,9 +9,9 @@ public class RedisDatabaseAccessor : IRedisDatabaseAccessor, IDisposable
 {
     private readonly IConnectionMultiplexer _connectionMultiplexer;
 
-    public RedisDatabaseAccessor(string? connectionString)
+    public RedisDatabaseAccessor(IOptions<RedisSettings> options)
     {
-        _connectionMultiplexer = ConnectionMultiplexer.Connect(connectionString);
+        _connectionMultiplexer = ConnectionMultiplexer.Connect(options.Value.ConnectionString);
     }
 
     public IDatabase GetDatabase(int dbNumber = -1) => _connectionMultiplexer.GetDatabase(dbNumber);

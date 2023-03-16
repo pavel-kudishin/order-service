@@ -1,21 +1,17 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Ozon.Route256.Five.OrderService.Core.Redis.Settings;
 
 namespace Ozon.Route256.Five.OrderService.Core.Redis;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddRedis(this IServiceCollection services, string? connectionString)
+    public static IServiceCollection AddRedis(this IServiceCollection services, IConfiguration configuration)
     {
-        services
-            .AddStackExchangeRedisCache(options =>
-            {
-                options.Configuration = connectionString;
-            });
+        services.Configure<RedisSettings>(configuration.GetSection("Redis"));
 
-        services.AddSingleton<IRedisDatabaseAccessor, RedisDatabaseAccessor>(
-            _ => new RedisDatabaseAccessor(connectionString));
+        services.AddSingleton<IRedisDatabaseAccessor, RedisDatabaseAccessor>();
 
         return services;
     }
-
 }

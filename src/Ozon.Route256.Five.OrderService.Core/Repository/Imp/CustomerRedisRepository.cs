@@ -1,7 +1,8 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
-using Ozon.Route256.Five.OrderService.Core.BusinessObjects;
+using Microsoft.Extensions.Options;
 using Ozon.Route256.Five.OrderService.Core.Redis;
+using Ozon.Route256.Five.OrderService.Core.Redis.Settings;
 using Ozon.Route256.Five.OrderService.Core.Repository.Dto;
 using StackExchange.Redis;
 
@@ -17,14 +18,17 @@ public class CustomerRedisRepository : ICustomerRepository
     private readonly IDatabase _redisDatabase;
     private readonly IServer _redisServer;
     private readonly ICustomerService _customerService;
+    private readonly TimeoutSettings _timeoutSettings;
 
     public CustomerRedisRepository(
         IRedisDatabaseAccessor redisDatabaseAccessor,
-        ICustomerService customerService)
+        ICustomerService customerService,
+        IOptionsSnapshot<RedisSettings> optionsSnapshot)
     {
         _redisDatabase = redisDatabaseAccessor.GetDatabase();
         _redisServer = redisDatabaseAccessor.GetServer();
         _customerService = customerService;
+        _timeoutSettings = optionsSnapshot.Value.Timeouts;
     }
 
     public async Task<CustomerDto?> Find(int customerId, CancellationToken token)
@@ -33,7 +37,7 @@ public class CustomerRedisRepository : ICustomerRepository
         RedisValue redisValue = await _redisDatabase.StringGetAsync(key);
         if (redisValue.IsNullOrEmpty == false)
         {
-            return JsonSerializer.Deserialize<CustomerDto>(redisValue.ToString(), _jsonSerializerOptions);
+            return Deserialize<CustomerDto>(redisValue);
         }
 
         CustomerDto? customerDto = await _customerService.GetCustomerAsync(customerId, token);
@@ -42,8 +46,8 @@ public class CustomerRedisRepository : ICustomerRepository
             return null;
         }
 
-        string value = JsonSerializer.Serialize(customerDto, _jsonSerializerOptions);
-        await _redisDatabase.StringSetAsync(key, value);
+        RedisValue value = Serialize(customerDto);
+        await _redisDatabase.StringSetAsync(key, value, _timeoutSettings.Customer);
         return customerDto;
     }
 
@@ -53,12 +57,12 @@ public class CustomerRedisRepository : ICustomerRepository
         RedisValue redisValue = await _redisDatabase.StringGetAsync(key);
         if (redisValue.IsNullOrEmpty == false)
         {
-            return JsonSerializer.Deserialize<CustomerDto[]>(redisValue.ToString(), _jsonSerializerOptions)!;
+            return Deserialize<CustomerDto[]>(redisValue);
         }
 
         CustomerDto[] customers = await _customerService.GetCustomersAsync(token);
-        string value = JsonSerializer.Serialize(customers, _jsonSerializerOptions);
-        await _redisDatabase.StringSetAsync(key, value);
+        RedisValue value = Serialize(customers);
+        await _redisDatabase.StringSetAsync(key, value, _timeoutSettings.Customers);
 
         await UpdateRedis(customers);
 
@@ -71,6 +75,7 @@ public class CustomerRedisRepository : ICustomerRepository
         RedisValue[] redisValues = await _redisDatabase.StringGetAsync(keys);
 
         List<int> missedIds = new(keys.Length);
+        List<CustomerDto> foundCustomers = new(keys.Length);
 
         for (int i = 0; i < redisValues.Length; i++)
         {
@@ -78,11 +83,11 @@ public class CustomerRedisRepository : ICustomerRepository
             {
                 missedIds.Add(customerIds[i]);
             }
+            else
+            {
+                foundCustomers.Add(Deserialize<CustomerDto>(redisValues[i]));
+            }
         }
-
-        IEnumerable<CustomerDto> customers = redisValues
-            .Where(v => v.IsNullOrEmpty == false)
-            .Select(v => JsonSerializer.Deserialize<CustomerDto>(v.ToString(), _jsonSerializerOptions)!);
 
         if (missedIds.Count > 0)
         {
@@ -90,26 +95,32 @@ public class CustomerRedisRepository : ICustomerRepository
             await UpdateRedis(allCustomers);
 
             IEnumerable<CustomerDto> missedCustomers = allCustomers.Where(c => missedIds.Contains(c.Id));
-            customers = customers.Union(missedCustomers);
+            foundCustomers.AddRange(missedCustomers);
         }
 
-        return customers.ToArray();
+        return foundCustomers.ToArray();
     }
 
     private async Task UpdateRedis(CustomerDto[] customers)
     {
-        KeyValuePair<RedisKey, RedisValue>[] valuePairs = customers
-            .Select(c =>
-            {
-                RedisKey key = GetKey(c.Id);
-                string value = JsonSerializer.Serialize(c, _jsonSerializerOptions);
-                return new KeyValuePair<RedisKey, RedisValue>(key, value);
-            })
-            .ToArray();
-
-        await _redisDatabase.StringSetAsync(valuePairs);
+        for (int i = 0; i < customers.Length; i++)
+        {
+            CustomerDto customer = customers[i];
+            RedisKey key = GetKey(customer.Id);
+            RedisValue value = Serialize(customer);
+            await _redisDatabase.StringSetAsync(key, value, _timeoutSettings.Customer);
+        }
     }
 
+    private static T Deserialize<T>(RedisValue v)
+    {
+        return JsonSerializer.Deserialize<T>(v.ToString(), _jsonSerializerOptions)!;
+    }
+
+    private static RedisValue Serialize<T>(T obj)
+    {
+        return JsonSerializer.Serialize(obj, _jsonSerializerOptions);
+    }
 
     private static RedisKey GetKey(long customerId) => (RedisKey)$"customer:{customerId}";
 }

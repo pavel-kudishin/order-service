@@ -4,4 +4,4 @@ public record PreOrderDto(
     long Id,
     PreOrderSource Source,
     PreOrderCustomerDto Customer,
-    IEnumerable<PreOrderGoodsDto> Goods);
+    IReadOnlyList<PreOrderGoodsDto> Goods);

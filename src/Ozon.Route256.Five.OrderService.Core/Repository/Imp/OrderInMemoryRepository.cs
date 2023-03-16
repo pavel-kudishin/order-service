@@ -1,5 +1,4 @@
 ﻿using Ozon.Route256.Five.OrderService.Core.Repository.Dto;
-using StackExchange.Redis;
 
 namespace Ozon.Route256.Five.OrderService.Core.Repository.Imp;
 
@@ -134,13 +133,17 @@ public class OrderInMemoryRepository : IOrderRepository
 
         AggregateOrdersDto[] aggregateOrders = orders
             .GroupBy(o => o.Region)
-            .Select(g => new AggregateOrdersDto()
+            .Select(g =>
             {
-                Region = g.Key,
-                OrdersCount = g.Count(),
-                TotalWeight = g.Sum(o => o.TotalWeight),
-                CustomersCount = g.Select(o => o.Customer.Id).Distinct().Count(),
-                TotalOrdersPrice = g.Sum(o => o.TotalPrice),
+                OrderDto[] orderDtos = g.ToArray();
+                return new AggregateOrdersDto()
+                {
+                    Region = g.Key,
+                    OrdersCount = orderDtos.Length,
+                    TotalWeight = orderDtos.Sum(o => o.TotalWeight),
+                    CustomersCount = orderDtos.Select(o => o.Customer.Id).Distinct().Count(),
+                    TotalOrdersPrice = orderDtos.Sum(o => o.TotalPrice),
+                };
             })
             .ToArray();
 
