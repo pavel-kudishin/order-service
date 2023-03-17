@@ -1,7 +1,8 @@
 ﻿namespace Ozon.Route256.Five.OrderService.Core.BusinessObjects;
 
-public enum OrderTypesBo
+public enum OrderSourceBo
 {
-	Pickup = 0,
-	Delivery = 1,
+    WebSite = 1,
+    Mobile = 2,
+    Api = 3
 }

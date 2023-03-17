@@ -18,7 +18,7 @@ namespace Ozon.Route256.Five.OrderService
                 .AddControllers()
                 .Services
                 .SetupGrpc(_configuration)
-                .AddInfrastructure();
+                .AddInfrastructure(_configuration);
         }
 
         public void Configure(IApplicationBuilder app)

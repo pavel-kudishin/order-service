@@ -2,13 +2,13 @@
 
 public class AggregateOrdersDto
 {
-    public int RegionId { get; set; }
+    public string Region { get; init; } = string.Empty;
 
-    public int OrdersCount { get; set; }
+    public int OrdersCount { get; init; }
 
-    public decimal TotalOrdersPrice { get; set; }
+    public decimal TotalOrdersPrice { get; init; }
 
-    public decimal TotalWeight { get; set; }
+    public decimal TotalWeight { get; init; }
 
-    public int CustomersCount { get; set; }
+    public int CustomersCount { get; init; }
 }

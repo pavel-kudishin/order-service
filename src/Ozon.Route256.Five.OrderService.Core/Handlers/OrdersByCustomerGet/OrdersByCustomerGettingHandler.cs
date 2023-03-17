@@ -10,19 +10,13 @@ public class OrdersByCustomerGettingHandler : IOrdersByCustomerGettingHandler
 {
     private readonly ICustomerRepository _customerRepository;
     private readonly IOrderRepository _orderRepository;
-    private readonly IRegionRepository _regionRepository;
-    private readonly IAddressRepository _addressRepository;
 
     public OrdersByCustomerGettingHandler(
         ICustomerRepository customerRepository,
-        IOrderRepository orderRepository,
-        IRegionRepository regionRepository,
-        IAddressRepository addressRepository)
+        IOrderRepository orderRepository)
     {
         _customerRepository = customerRepository;
         _orderRepository = orderRepository;
-        _regionRepository = regionRepository;
-        _addressRepository = addressRepository;
     }
 
     public async Task<HandlerResult<OrderBo[]>> Handle(
@@ -40,24 +34,8 @@ public class OrdersByCustomerGettingHandler : IOrdersByCustomerGettingHandler
         OrderDto[] orders = await _orderRepository.FindByCustomer(
             request.CustomerId, request.StartDate, request.EndDate, request.PageNumber, request.ItemsPerPage, token);
 
-        OrderBo[] ordersBo = await PrepareOrdersBo(token, orders);
+        OrderBo[] ordersBo = orders.ToOrdersBo().ToArray();
 
         return HandlerResult<OrderBo[]>.FromValue(ordersBo);
-    }
-
-    private async Task<OrderBo[]> PrepareOrdersBo(CancellationToken token, OrderDto[] orders)
-    {
-        IEnumerable<int> addressIds = orders.Select(o => o.AddressId);
-
-        AddressDto[] addresses = await _addressRepository.FindMany(addressIds, token);
-
-        IEnumerable<int> regionIds = addresses.Select(a => a.RegionId);
-        RegionDto[] regions = await _regionRepository.FindMany(regionIds, token);
-
-        Dictionary<int, AddressDto> addressesDictionary = addresses.ToDictionary(a => a.Id);
-        Dictionary<int, RegionDto> regionsDictionary = regions.ToDictionary(a => a.Id);
-
-        OrderBo[] ordersBo = orders.ToOrdersBo(addressesDictionary, regionsDictionary, null).ToArray();
-        return ordersBo;
     }
 }

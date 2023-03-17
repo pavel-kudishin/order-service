@@ -5,5 +5,5 @@ namespace Ozon.Route256.Five.OrderService.Rest.Dto;
 public sealed class OrderStatusResponseDto
 {
     [Required]
-    public string? StatusName { get; set; }
+    public OrderStateDto State { get; init; }
 }

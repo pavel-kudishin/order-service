@@ -1,6 +1,8 @@
+using Ozon.Route256.Five.OrderService.Core.BusinessObjects;
 using Ozon.Route256.Five.OrderService.Core.Handlers.ResultTypes;
 using Ozon.Route256.Five.OrderService.Core.Repository;
 using Ozon.Route256.Five.OrderService.Core.Repository.Dto;
+using Ozon.Route256.Five.OrderService.Core.Repository.Extensions;
 
 namespace Ozon.Route256.Five.OrderService.Core.Handlers.OrderStatusGet;
 
@@ -14,16 +16,17 @@ public class OrderStatusGettingHandler : IOrderStatusGettingHandler
         _orderRepository = orderRepository;
     }
 
-    public async Task<HandlerResult<string>> Handle(
+    public async Task<HandlerResult<OrderStateBo>> Handle(
         IOrderStatusGettingHandler.Request request, CancellationToken token)
     {
         OrderDto? order = await _orderRepository.Find(request.OrderId, token);
 
         if (order is null)
         {
-            return HandlerResult<string>.FromError(new OrderNotFoundException($"Order #{request.OrderId} not found"));
+            return HandlerResult<OrderStateBo>.FromError(
+                new OrderNotFoundException($"Order #{request.OrderId} not found"));
         }
 
-        return HandlerResult<string>.FromValue(order.Status);
+        return HandlerResult<OrderStateBo>.FromValue(order.State.ToOrderStateBo());
     }
 }

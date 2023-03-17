@@ -8,29 +8,29 @@ public sealed class AggregatedOrdersResponseDto
     /// Регион
     /// </summary>
     [Required]
-    public RegionDto? Region { get; set; }
+    public string Region { get; init; } = string.Empty;
 
     /// <summary>
     /// Количество заказов
     /// </summary>
     [Required]
-    public int OrdersCount { get; set; }
+    public int OrdersCount { get; init; }
 
     /// <summary>
     /// Общая сумма заказов
     /// </summary>
     [Required]
-    public decimal TotalOrdersPrice { get; set; }
+    public decimal TotalOrdersPrice { get; init; }
 
     /// <summary>
     /// Суммарный вес
     /// </summary>
     [Required]
-    public decimal TotalWeight { get; set; }
+    public decimal TotalWeight { get; init; }
 
     /// <summary>
     /// Количество клиентов, сделавших заказ в этом регионе
     /// </summary>
     [Required]
-    public int CustomersCount { get; set; }
+    public int CustomersCount { get; init; }
 }

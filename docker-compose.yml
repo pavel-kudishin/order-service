@@ -8,7 +8,8 @@ services:
      - "50070-50071:50002"
     environment:
      - ROUTE256_SERVICE_DISCOVERY_ADDRESS=http://host.docker.internal:5084
-     - ROUTE256_LOGISTICS_SIMULATOR_ADDRESS=http://host.docker.internal:5082
+     - ROUTE256_LOGISTICS_SIMULATOR_ADDRESS=http://host.docker.internal:5085
+     - ROUTE256_CUSTOMER_SERVICE_ADDRESS=http://host.docker.internal:5081
     build:
       context: .
       dockerfile: src/Ozon.Route256.Five.OrderService/Dockerfile
@@ -31,10 +32,14 @@ services:
   redis-orders:
     image: redis
     restart: unless-stopped
+    ports:
+      - "6382:6379"
 
   redis-logistics:
     image: redis
     restart: unless-stopped
+    ports:
+      - "6379:6379"
 
   zookeeper:
     image: zookeeper
@@ -46,12 +51,15 @@ services:
     image: bitnami/kafka:latest
     ports:
      - "9092:9092"
+     - '9093:9093'
     environment:
      - KAFKA_BROKER_ID=1
-     - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092
-     - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://127.0.0.1:9092
      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
      - ALLOW_PLAINTEXT_LISTENER=yes
+     - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CLIENT:PLAINTEXT,EXTERNAL:PLAINTEXT
+     - KAFKA_CFG_LISTENERS=CLIENT://:9092,EXTERNAL://:9093
+     - KAFKA_CFG_ADVERTISED_LISTENERS=CLIENT://kafka:9092,EXTERNAL://localhost:9093
+     - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=CLIENT
     depends_on:
      - zookeeper
     restart: unless-stopped
@@ -100,11 +108,16 @@ services:
      - service-discovery
      - redis-customers
     restart: unless-stopped
+    environment:
+     ConnectionStrings:SdUrl: http://host.docker.internal:5084
 
   logistics-simulator:
     image: gitlab-registry.ozon.dev/cs/classroom-5/teachers/five/logistics-simulator:latest
     ports:
-     - "5082:5080"
+     - "5085:5080"
+    environment:
+      Redis:ConnectionString: redis-logistics:6379,abortConnect=false
+      Kafka:BootstrapServers: kafka:9092
     depends_on:
      - kafka
      - redis-logistics
@@ -114,6 +127,11 @@ services:
     image: gitlab-registry.ozon.dev/cs/classroom-5/teachers/five/orders-generator:latest
     ports:
      - "5083:80"
+    environment:
+     - ROUTE256_KAFKA_BROKERS=kafka:9092
+     - ROUTE256_ORDER_SOURCE=Api
+     - ROUTE256_ORDER_REQUEST_TOPIC=pre_orders
+     - ROUTE256_CUSTOMER_SERVICE=http://host.docker.internal:5081
     depends_on:
      - kafka
      - customer-service

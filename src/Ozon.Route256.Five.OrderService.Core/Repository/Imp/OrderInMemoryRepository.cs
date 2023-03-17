@@ -2,7 +2,7 @@
 
 namespace Ozon.Route256.Five.OrderService.Core.Repository.Imp;
 
-public class OrderInMemoryRepository: IOrderRepository
+public class OrderInMemoryRepository : IOrderRepository
 {
     private readonly InMemoryStorage _inMemoryStorage;
 
@@ -33,6 +33,23 @@ public class OrderInMemoryRepository: IOrderRepository
         return Task.FromResult(order).WaitAsync(token);
     }
 
+    public Task Insert(OrderDto order, CancellationToken token)
+    {
+        if (token.IsCancellationRequested)
+        {
+            return Task.FromCanceled(token);
+        }
+
+        if (_inMemoryStorage.Orders.ContainsKey(order.Id))
+        {
+            throw new RepositoryException($"Order#{order.Id} already exists");
+        }
+
+        _inMemoryStorage.Orders[order.Id] = order;
+
+        return Task.CompletedTask.WaitAsync(token);
+    }
+
     public Task<OrderDto[]> FindByCustomer(int customerId, DateTime? startDate, DateTime? endDate,
         int pageNumber, int itemsPerPage, CancellationToken token)
     {
@@ -42,7 +59,7 @@ public class OrderInMemoryRepository: IOrderRepository
         }
 
         IEnumerable<OrderDto> orders = _inMemoryStorage.Orders.Values
-            .Where(o => o.CustomerId == customerId);
+            .Where(o => o.Customer.Id == customerId);
 
         if (startDate.HasValue)
         {
@@ -59,8 +76,7 @@ public class OrderInMemoryRepository: IOrderRepository
         return Task.FromResult(orders.ToArray()).WaitAsync(token);
     }
 
-    public Task<OrderDto[]> Filter(int[]? regionIds, OrderTypesDto[]? orderTypes,
-        int pageNumber, int itemsPerPage,
+    public Task<OrderDto[]> Filter(string[]? regions, OrderSourceDto[]? sources, int pageNumber, int itemsPerPage,
         OrderingDirectionDto orderingDirection, CancellationToken token)
     {
         if (token.IsCancellationRequested)
@@ -70,23 +86,23 @@ public class OrderInMemoryRepository: IOrderRepository
 
         IEnumerable<OrderDto> orders = _inMemoryStorage.Orders.Values;
 
-        if (regionIds != null && regionIds.Length > 0)
+        if (regions != null && regions.Length > 0)
         {
-            orders = orders.Where(o => regionIds.Contains(o.RegionId));
+            orders = orders.Where(o => regions.Contains(o.Region));
         }
 
-        if (orderTypes != null)
+        if (sources != null)
         {
-            orders = orders.Where(o => orderTypes.Contains(o.OrderType));
+            orders = orders.Where(o => sources.Contains(o.Source));
         }
 
         if (orderingDirection == OrderingDirectionDto.Asc)
         {
-            orders = orders.OrderBy(o => o.RegionId).ThenBy(o => o.DateCreated);
+            orders = orders.OrderBy(o => o.Region).ThenBy(o => o.DateCreated);
         }
         else
         {
-            orders = orders.OrderByDescending(o => o.RegionId).ThenBy(o => o.DateCreated);
+            orders = orders.OrderByDescending(o => o.Region).ThenBy(o => o.DateCreated);
         }
 
         orders = orders.Skip(pageNumber * itemsPerPage).Take(itemsPerPage);
@@ -94,8 +110,8 @@ public class OrderInMemoryRepository: IOrderRepository
         return Task.FromResult(orders.ToArray()).WaitAsync(token);
     }
 
-    public Task<AggregateOrdersDto[]> AggregateOrders(int[]? regionIds, DateTime startDate,
-        DateTime? endDate, CancellationToken token)
+    public Task<AggregateOrdersDto[]> AggregateOrders(
+        string[]? regions, DateTime startDate, DateTime? endDate, CancellationToken token)
     {
         if (token.IsCancellationRequested)
         {
@@ -105,9 +121,9 @@ public class OrderInMemoryRepository: IOrderRepository
         IEnumerable<OrderDto> orders = _inMemoryStorage.Orders.Values
             .Where(o => o.DateCreated >= startDate);
 
-        if (regionIds != null && regionIds.Length > 0)
+        if (regions != null && regions.Length > 0)
         {
-            orders = orders.Where(o => regionIds.Contains(o.RegionId));
+            orders = orders.Where(o => regions.Contains(o.Region));
         }
 
         if (endDate.HasValue)
@@ -115,18 +131,22 @@ public class OrderInMemoryRepository: IOrderRepository
             orders = orders.Where(o => o.DateCreated <= endDate);
         }
 
-
         AggregateOrdersDto[] aggregateOrders = orders
-            .GroupBy(o => o.RegionId)
-            .Select(g => new AggregateOrdersDto()
+            .GroupBy(o => o.Region)
+            .Select(g =>
             {
-                RegionId = g.Key,
-                OrdersCount = g.Count(),
-                TotalWeight = g.Select(o => o.TotalWeight).Sum(),
-                CustomersCount = g.Select(o => o.CustomerId).Distinct().Count(),
-                TotalOrdersPrice = g.Select(o => o.TotalPrice).Sum(),
+                OrderDto[] orderDtos = g.ToArray();
+                return new AggregateOrdersDto()
+                {
+                    Region = g.Key,
+                    OrdersCount = orderDtos.Length,
+                    TotalWeight = orderDtos.Sum(o => o.TotalWeight),
+                    CustomersCount = orderDtos.Select(o => o.Customer.Id).Distinct().Count(),
+                    TotalOrdersPrice = orderDtos.Sum(o => o.TotalPrice),
+                };
             })
             .ToArray();
+
 
         return Task.FromResult(aggregateOrders).WaitAsync(token);
     }
@@ -136,6 +156,11 @@ public class OrderInMemoryRepository: IOrderRepository
         if (token.IsCancellationRequested)
         {
             return Task.FromCanceled(token);
+        }
+
+        if (_inMemoryStorage.Orders.ContainsKey(order.Id) == false)
+        {
+            throw new RepositoryException($"Order #{order.Id} not found");
         }
 
         _inMemoryStorage.Orders[order.Id] = order;

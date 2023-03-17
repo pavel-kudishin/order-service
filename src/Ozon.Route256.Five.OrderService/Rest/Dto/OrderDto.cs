@@ -8,58 +8,58 @@ public sealed class OrderDto
     /// ИД заказа
     /// </summary>
     [Required]
-    public long Id { get; set; }
+    public long Id { get; init; }
 
     /// <summary>
     /// Количество товаров в заказе
     /// </summary>
     [Required]
-    public int ArticlesCount { get; set; }
+    public int GoodsCount { get; init; }
 
     /// <summary>
     /// Общая сумма заказа
     /// </summary>
     [Required]
-    public decimal TotalPrice { get; set; }
+    public decimal TotalPrice { get; init; }
 
     /// <summary>
     /// Общий вес заказа в кг
     /// </summary>
     [Required]
-    public decimal TotalWeight { get; set; }
+    public decimal TotalWeight { get; init; }
 
     /// <summary>
     /// Тип заказа
     /// </summary>
     [Required]
-    public OrderTypesDto OrderType { get; set; }
+    public OrderSourceDto Source { get; init; }
 
     /// <summary>
     /// Дата заказа
     /// </summary>
     [Required]
-    public DateTime DateCreated { get; set; }
+    public DateTime DateCreated { get; init; }
 
     /// <summary>
     /// Статус заказа
     /// </summary>
     [Required]
-    public string? Status { get; set; }
+    public OrderStateDto State { get; init; }
 
     /// <summary>
     /// Клиент
     /// </summary>
-    public CustomerDto? Customer { get; set; }
+    public CustomerDto? Customer { get; init; }
 
     /// <summary>
     /// Адрес доставки
     /// </summary>
     [Required]
-    public AddressDto? DeliveryAddress { get; set; }
+    public AddressDto? DeliveryAddress { get; init; }
 
     /// <summary>
     /// Телефон
     /// </summary>
     [Required]
-    public string? Phone { get; set; }
+    public string? Phone { get; init; }
 }

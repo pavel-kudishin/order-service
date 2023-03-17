@@ -11,14 +11,14 @@ public class RegionInMemoryRepository: IRegionRepository
         _inMemoryStorage = inMemoryStorage;
     }
 
-    public Task<RegionDto?> Find(int id, CancellationToken token)
+    public Task<RegionDto?> Find(string name, CancellationToken token)
     {
         if (token.IsCancellationRequested)
         {
             return Task.FromCanceled<RegionDto?>(token);
         }
 
-        _inMemoryStorage.Regions.TryGetValue(id, out RegionDto? region);
+        _inMemoryStorage.Regions.TryGetValue(name, out RegionDto? region);
 
         return Task.FromResult(region).WaitAsync(token);
     }
@@ -33,24 +33,24 @@ public class RegionInMemoryRepository: IRegionRepository
         return Task.FromResult(_inMemoryStorage.Regions.Values.ToArray()).WaitAsync(token);
     }
 
-    public Task<RegionDto[]> FindMany(IEnumerable<int> ids, CancellationToken token)
+    public Task<RegionDto[]> FindMany(IEnumerable<string> names, CancellationToken token)
     {
         if (token.IsCancellationRequested)
         {
             return Task.FromCanceled<RegionDto[]>(token);
         }
 
-        RegionDto[] regions = FindDto(ids, token).ToArray();
+        RegionDto[] regions = FindDto(names, token).ToArray();
         return Task.FromResult(regions).WaitAsync(token);
     }
 
-    private IEnumerable<RegionDto> FindDto(IEnumerable<int> ids, CancellationToken token)
+    private IEnumerable<RegionDto> FindDto(IEnumerable<string> names, CancellationToken token)
     {
-        foreach (int id in ids.Distinct())
+        foreach (string name in names.Distinct())
         {
             token.ThrowIfCancellationRequested();
 
-            if (_inMemoryStorage.Regions.TryGetValue(id, out RegionDto? region))
+            if (_inMemoryStorage.Regions.TryGetValue(name, out RegionDto? region))
             {
                 yield return region;
             }

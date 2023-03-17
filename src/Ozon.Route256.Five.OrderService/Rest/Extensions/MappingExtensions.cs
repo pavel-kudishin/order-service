@@ -17,7 +17,7 @@ public static class MappingExtensions
             LastName = customer.LastName,
             MobileNumber = customer.MobileNumber,
             Email = customer.Email,
-            Address = customer.Address?.ToAddressDto(),
+            DefaultAddress = customer.DefaultAddress?.ToAddressDto(),
             Addresses = customer.Addresses.ToAddressesDto(),
         };
     }
@@ -52,7 +52,7 @@ public static class MappingExtensions
         this AggregatedOrdersRequestDto request)
     {
         return new IOrderAggregationHandler.Request(
-            request.RegionIds,
+            request.Regions,
             request.StartDate,
             request.EndDate
         );
@@ -62,12 +62,41 @@ public static class MappingExtensions
         this OrdersRequestDto request)
     {
         return new IOrdersGettingHandler.Request(
-            request.RegionIds,
-            request.OrderTypes?.Select(t => t.ToHandlersOrderType()).ToArray(),
+            request.Regions,
+            request.Sources.ToSourcesDto(),
             request.PageNumber,
             request.ItemsPerPage,
             request.Direction.ToHandlersOrderingDirection()
         );
+    }
+
+    public static OrderSourceBo[]? ToSourcesDto(this OrderSourceDto[]? sources)
+    {
+        return sources?.Select(os => os.ToSourcesDto()).ToArray();
+    }
+
+    public static OrderSourceBo ToSourcesDto(this OrderSourceDto source)
+    {
+        return source switch
+        {
+            OrderSourceDto.WebSite => OrderSourceBo.WebSite,
+            OrderSourceDto.Mobile => OrderSourceBo.Mobile,
+            OrderSourceDto.Api => OrderSourceBo.Api,
+            _ => throw new ArgumentOutOfRangeException(nameof(source), source, null)
+        };
+    }
+
+    public static OrderStateBo ToOrderStateBo(this OrderStateDto source)
+    {
+        return source switch
+        {
+            OrderStateDto.Created => OrderStateBo.Created,
+            OrderStateDto.SentToCustomer => OrderStateBo.SentToCustomer,
+            OrderStateDto.Delivered => OrderStateBo.Delivered,
+            OrderStateDto.Lost => OrderStateBo.Lost,
+            OrderStateDto.Cancelled => OrderStateBo.Cancelled,
+            _ => throw new ArgumentOutOfRangeException(nameof(source), source, null)
+        };
     }
 
     public static IOrdersByCustomerGettingHandler.Request ToOrdersByCustomerGettingHandlerRequest(
@@ -87,7 +116,7 @@ public static class MappingExtensions
     {
         return new AggregatedOrdersResponseDto()
         {
-            Region = response.Region?.ToRegionDto(),
+            Region = response.Region,
             TotalWeight = response.TotalWeight,
             CustomersCount = response.CustomersCount,
             OrdersCount = response.OrdersCount,
@@ -95,13 +124,11 @@ public static class MappingExtensions
         };
     }
 
-
     public static AddressDto ToAddressDto(this AddressBo address)
     {
         return new AddressDto()
         {
-            Id = address.Id,
-            Region = address.Region?.ToRegionDto(),
+            Region = address.Region,
             Street = address.Street,
             Building = address.Building,
             Apartment = address.Apartment,
@@ -115,8 +142,17 @@ public static class MappingExtensions
     {
         return new RegionDto()
         {
-            Id = region.Id,
             Name = region.Name,
+            Warehouse = region.Warehouse?.ToWarehouseDto(),
+        };
+    }
+
+    public static WarehouseDto ToWarehouseDto(this WarehouseBo region)
+    {
+        return new WarehouseDto()
+        {
+            Latitude = region.Latitude,
+            Longitude = region.Longitude,
         };
     }
 
@@ -125,35 +161,26 @@ public static class MappingExtensions
         return new OrderDto()
         {
             Id = order.Id,
-            ArticlesCount = order.ArticlesCount,
+            GoodsCount = order.GoodsCount,
             TotalPrice = order.TotalPrice,
             TotalWeight = order.TotalWeight,
-            OrderType = order.OrderType.ToDtoOrderType(),
+            Source = order.Source.ToOrderSourceDto(),
             DateCreated = order.DateCreated,
-            Status = order.Status,
+            State = order.State.ToOrderStateDto(),
             Customer = order.Customer?.ToCustomerDto(),
             DeliveryAddress = order.Address?.ToAddressDto(),
             Phone = order.Phone,
         };
     }
 
-    private static OrderTypesDto ToDtoOrderType(this OrderTypesBo orderType)
+    public static OrderSourceDto ToOrderSourceDto(this OrderSourceBo source)
     {
-        return orderType switch
+        return source switch
         {
-            OrderTypesBo.Pickup => OrderTypesDto.Pickup,
-            OrderTypesBo.Delivery => OrderTypesDto.Delivery,
-            _ => throw new ArgumentOutOfRangeException(nameof(orderType), orderType, null)
-        };
-    }
-
-    private static OrderTypesBo ToHandlersOrderType(this OrderTypesDto orderType)
-    {
-        return orderType switch
-        {
-            OrderTypesDto.Pickup => OrderTypesBo.Pickup,
-            OrderTypesDto.Delivery => OrderTypesBo.Delivery,
-            _ => throw new ArgumentOutOfRangeException(nameof(orderType), orderType, null)
+            OrderSourceBo.WebSite => OrderSourceDto.WebSite,
+            OrderSourceBo.Mobile => OrderSourceDto.Mobile,
+            OrderSourceBo.Api => OrderSourceDto.Api,
+            _ => throw new ArgumentOutOfRangeException(nameof(source), source, null)
         };
     }
 
@@ -164,6 +191,19 @@ public static class MappingExtensions
             OrderingDirectionDto.Asc => OrderingDirectionBo.Asc,
             OrderingDirectionDto.Desc => OrderingDirectionBo.Desc,
             _ => throw new ArgumentOutOfRangeException(nameof(direction), direction, null)
+        };
+    }
+
+    public static OrderStateDto ToOrderStateDto(this OrderStateBo source)
+    {
+        return source switch
+        {
+            OrderStateBo.Created => OrderStateDto.Created,
+            OrderStateBo.SentToCustomer => OrderStateDto.SentToCustomer,
+            OrderStateBo.Delivered => OrderStateDto.Delivered,
+            OrderStateBo.Lost => OrderStateDto.Lost,
+            OrderStateBo.Cancelled => OrderStateDto.Cancelled,
+            _ => throw new ArgumentOutOfRangeException(nameof(source), source, null)
         };
     }
 }

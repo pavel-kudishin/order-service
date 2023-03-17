@@ -12,15 +12,12 @@ public class CustomersGettingHandlerTests
     [Fact]
     public async Task GetAllCustomers()
     {
-        Mock<IRegionRepository> regionRepository = new();
-        regionRepository.Setup(repo => repo.GetAll(CancellationToken.None)).Returns(TestData.GetTestRegions());
-        Mock<IAddressRepository> addressRepository = new();
-        addressRepository.Setup(repo => repo.GetAll(CancellationToken.None)).Returns(TestData.GetTestAddresses());
         Mock<ICustomerRepository> customerRepository = new();
-        customerRepository.Setup(repo => repo.GetAll(CancellationToken.None)).Returns(TestData.GetTestCustomers());
+        customerRepository.Setup(repo => repo.GetAll(CancellationToken.None))
+            .Returns(Task.FromResult(TestData.GetTestCustomers()));
 
         CustomersGettingHandler handler =
-            new(customerRepository.Object, regionRepository.Object, addressRepository.Object);
+            new(customerRepository.Object);
 
         HandlerResult<CustomerBo[]> result = await handler.Handle(CancellationToken.None);
 
