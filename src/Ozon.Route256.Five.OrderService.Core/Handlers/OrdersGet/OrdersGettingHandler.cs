@@ -10,13 +10,16 @@ public class OrdersGettingHandler : IOrdersGettingHandler
 {
     private readonly IOrderRepository _orderRepository;
     private readonly IRegionRepository _regionRepository;
+    private readonly ICustomerRepository _customerRepository;
 
     public OrdersGettingHandler(
         IOrderRepository orderRepository,
-        IRegionRepository regionRepository)
+        IRegionRepository regionRepository,
+        ICustomerRepository customerRepository)
     {
         _orderRepository = orderRepository;
         _regionRepository = regionRepository;
+        _customerRepository = customerRepository;
     }
 
     public async Task<HandlerResult<OrderBo[]>> Handle(
@@ -43,7 +46,10 @@ public class OrdersGettingHandler : IOrdersGettingHandler
             request.Direction.ToOrderingDirectionDto(),
             token);
 
-        OrderBo[] ordersBo = orders.ToOrdersBo();
+        int[] customerIds = orders.Select(o => o.CustomerId).Distinct().ToArray();
+        CustomerDto[] customerDtos = await _customerRepository.FindMany(customerIds, token);
+
+        OrderBo[] ordersBo = orders.ToOrdersBo(customerDtos);
 
         return HandlerResult<OrderBo[]>.FromValue(ordersBo);
     }

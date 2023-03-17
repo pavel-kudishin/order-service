@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Ozon.Route256.Five.OrderService.ClientBalancing;
+using Ozon.Route256.Five.OrderService.Shared.ClientBalancing;
 
 namespace Ozon.Route256.Five.OrderService.Tests;
 
@@ -23,12 +24,12 @@ public class DbStoreTests
     public async Task GetNextEndpointAsync_Successful()
     {
         DbEndpoint result = await _dbStore.GetNextEndpointAsync();
-        result.HostAndPort.Should().Be("testHost1");
+        result.ConnectionString.Should().Be("testHost1");
 
         result = await _dbStore.GetNextEndpointAsync();
-        result.HostAndPort.Should().Be("testHost2");
+        result.ConnectionString.Should().Be("testHost2");
 
         result = await _dbStore.GetNextEndpointAsync();
-        result.HostAndPort.Should().Be("testHost1");
+        result.ConnectionString.Should().Be("testHost1");
     }
 }

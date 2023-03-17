@@ -1,3 +1,5 @@
+using Ozon.Route256.Five.OrderService.Shared.ClientBalancing;
+
 namespace Ozon.Route256.Five.OrderService.ClientBalancing;
 
 internal sealed class DbStore : IDbStore

@@ -10,6 +10,10 @@ services:
      - ROUTE256_SERVICE_DISCOVERY_ADDRESS=http://host.docker.internal:5084
      - ROUTE256_LOGISTICS_SIMULATOR_ADDRESS=http://host.docker.internal:5085
      - ROUTE256_CUSTOMER_SERVICE_ADDRESS=http://host.docker.internal:5081
+     - ROUTE256_PG_CONNECTION_STRING=Server=orders-db;Port=5432;User Id=postgres;Password=secret;Database=orders_db;
+     - POSTGRES_DB=orders_db
+     - POSTGRES_LOGIN=postgres
+     - POSTGRES_PASSWORD=secret
     build:
       context: .
       dockerfile: src/Ozon.Route256.Five.OrderService/Dockerfile
@@ -92,6 +96,17 @@ services:
      - "6432:8080"
     restart: unless-stopped
 
+  pgadmin4:
+    image: dpage/pgadmin4
+    ports:
+     - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: root
+    restart: unless-stopped
+    volumes:
+     - pgadmin4_data:/var/lib/pgadmin
+
   jaeger:
     image: jaegertracing/all-in-one:latest
     ports:
@@ -123,13 +138,35 @@ services:
      - redis-logistics
     restart: unless-stopped
 
-  orders-generator:
+  orders-generator-api:
     image: gitlab-registry.ozon.dev/cs/classroom-5/teachers/five/orders-generator:latest
-    ports:
-     - "5083:80"
     environment:
      - ROUTE256_KAFKA_BROKERS=kafka:9092
      - ROUTE256_ORDER_SOURCE=Api
+     - ROUTE256_ORDER_REQUEST_TOPIC=pre_orders
+     - ROUTE256_CUSTOMER_SERVICE=http://host.docker.internal:5081
+    depends_on:
+     - kafka
+     - customer-service
+    restart: unless-stopped
+
+  orders-generator-website:
+    image: gitlab-registry.ozon.dev/cs/classroom-5/teachers/five/orders-generator:latest
+    environment:
+     - ROUTE256_KAFKA_BROKERS=kafka:9092
+     - ROUTE256_ORDER_SOURCE=WebSite
+     - ROUTE256_ORDER_REQUEST_TOPIC=pre_orders
+     - ROUTE256_CUSTOMER_SERVICE=http://host.docker.internal:5081
+    depends_on:
+     - kafka
+     - customer-service
+    restart: unless-stopped
+
+  orders-generator-mobile:
+    image: gitlab-registry.ozon.dev/cs/classroom-5/teachers/five/orders-generator:latest
+    environment:
+     - ROUTE256_KAFKA_BROKERS=kafka:9092
+     - ROUTE256_ORDER_SOURCE=Mobile
      - ROUTE256_ORDER_REQUEST_TOPIC=pre_orders
      - ROUTE256_CUSTOMER_SERVICE=http://host.docker.internal:5081
     depends_on:
@@ -143,10 +180,11 @@ services:
      - "5084:80"
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
-      - ROUTE256_DB_STATE=cluster:0-9:db1:1543;cluster:10-19:db2:1543;cluster1:0:db3:1543
+      - ROUTE256_DB_STATE=cluster:0-9:orders-db:5432;cluster:10-19:orders-db:5432;cluster1:0:db3:1543
       - ROUTE256_UPDATE_TIMEOUT=10
     restart: unless-stopped
 
 volumes:
   pgdata_customers:
   pgdata_orders:
+  pgadmin4_data:

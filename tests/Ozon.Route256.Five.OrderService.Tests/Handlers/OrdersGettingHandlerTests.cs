@@ -23,7 +23,11 @@ public class OrdersGettingHandlerTests
         orderRepository.Setup(repo => repo.Filter(null, null, 0, 10, OrderingDirectionDto.Asc, CancellationToken.None))
             .Returns(Task.FromResult(TestData.GetTestOrders()));
 
-        OrdersGettingHandler handler = new(orderRepository.Object, regionRepository.Object);
+        Mock<ICustomerRepository> customerRepository = new();
+        customerRepository.Setup(repo => repo.Find(TestData.CUSTOMER_ID, CancellationToken.None))
+            .Returns(Task.FromResult((CustomerDto?)TestData.GetTestCustomer()));
+
+        OrdersGettingHandler handler = new(orderRepository.Object, regionRepository.Object, customerRepository.Object);
 
         IOrdersGettingHandler.Request request = new(null, null, 0, 10, OrderingDirectionBo.Asc);
         HandlerResult<OrderBo[]> result = await handler.Handle(request, CancellationToken.None);

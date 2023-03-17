@@ -54,5 +54,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Ozon.Route256.Five.OrderService.Core\Ozon.Route256.Five.OrderService.Core.csproj" />
+    <ProjectReference Include="..\Ozon.Route256.Five.OrderService.Db\Ozon.Route256.Five.OrderService.Db.csproj" />
+    <ProjectReference Include="..\Ozon.Route256.Five.OrderService.Shared\Ozon.Route256.Five.OrderService.Shared.csproj" />
   </ItemGroup>
 </Project>
