@@ -11,9 +11,9 @@ services:
      - ROUTE256_LOGISTICS_SIMULATOR_ADDRESS=http://host.docker.internal:5085
      - ROUTE256_CUSTOMER_SERVICE_ADDRESS=http://host.docker.internal:5081
      - ROUTE256_PG_CONNECTION_STRING=Server=orders-db;Port=5432;User Id=postgres;Password=secret;Database=orders_db;
-     - POSTGRES_DB=orders_db
-     - POSTGRES_LOGIN=postgres
-     - POSTGRES_PASSWORD=secret
+     - Postgres__Db=orders_db
+     - Postgres__Login=postgres
+     - Postgres__Password=secret
     build:
       context: .
       dockerfile: src/Ozon.Route256.Five.OrderService/Dockerfile

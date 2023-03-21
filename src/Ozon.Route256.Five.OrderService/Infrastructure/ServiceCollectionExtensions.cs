@@ -11,6 +11,7 @@ using Ozon.Route256.Five.OrderService.Core.Handlers.OrdersGet;
 using Ozon.Route256.Five.OrderService.Core.Handlers.OrderStatusGet;
 using Ozon.Route256.Five.OrderService.Core.Handlers.RegionsGet;
 using Ozon.Route256.Five.OrderService.Core.Redis;
+using Ozon.Route256.Five.OrderService.Core.Redis.Settings;
 using Ozon.Route256.Five.OrderService.Core.Repository;
 using Ozon.Route256.Five.OrderService.Core.Repository.Imp;
 using Ozon.Route256.Five.OrderService.Db;
@@ -88,6 +89,8 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<IValidator<OrdersByCustomerRequestDto>, OrdersByCustomerRequestDtoValidator>();
         services.AddScoped<IValidator<AggregatedOrdersRequestDto>, AggregatedOrdersRequestDtoValidator>();
+
+        services.Configure<PostgresSettings>(configuration.GetSection("Postgres"));
 
         return services;
     }

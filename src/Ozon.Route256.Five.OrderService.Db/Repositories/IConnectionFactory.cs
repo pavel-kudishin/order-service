@@ -2,7 +2,7 @@
 
 namespace Ozon.Route256.Five.OrderService.Db.Repositories;
 
-public interface IConnectionCreator
+public interface IConnectionFactory
 {
     Task<NpgsqlConnection> GetConnection();
 }

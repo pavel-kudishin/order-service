@@ -2,24 +2,26 @@
 
 namespace Ozon.Route256.Five.OrderService.Db.Migrations;
 
-[Migration(2, description: "regions table altered")]
+[Migration(2, description: "regions table added")]
 public class Migration0002 : Migration
 {
     public override void Up()
     {
-        Alter.Table("regions")
-            .AddColumn("warehouse_coordinates").AsCustom("point").NotNullable();
+
+        Create.Table("regions")
+            .WithColumn("id").AsInt32().NotNullable().PrimaryKey()
+            .WithColumn("name").AsString(100).NotNullable()
+            .WithColumn("warehouse_id").AsInt32().NotNullable()
+            .ForeignKey("warehouses", "id");
 
         Insert.IntoTable("regions")
-            .Row(new { name = "Moscow", warehouse_coordinates = "(37.639303,55.729595)" })
-            .Row(new { name = "StPetersburg", warehouse_coordinates = "(30.318006,59.938703)" })
-            .Row(new { name = "Novosibirsk", warehouse_coordinates = "(82.925218,55.030488)" });
+            .Row(new { id = 1, name = "Moscow", warehouse_id = 11 })
+            .Row(new { id = 2, name = "StPetersburg", warehouse_id = 12 })
+            .Row(new { id = 3, name = "Novosibirsk", warehouse_id = 13 });
     }
 
     public override void Down()
     {
-        Delete.FromTable("regions").AllRows();
-
-        Delete.Column("warehouse_coordinates").FromTable("regions");
+        Delete.Table("regions");
     }
 }

@@ -30,7 +30,7 @@ public static class MappingExtensions
             TotalPrice = (double)order.TotalPrice,
             TotalWeight = (double)order.TotalWeight,
             OrderType = order.Source.ToString(),
-            DateCreated = DateTime.SpecifyKind(order.DateCreated, DateTimeKind.Utc).ToTimestamp(),
+            DateCreated = order.DateCreated.ToTimestamp(),
             State = order.State.ToString(),
             CustomerName = order.Customer != null ? $"{order.Customer.LastName} {order.Customer.FirstName}" : null,
             DeliveryAddress = order.Address?.ToProtoAddress(),

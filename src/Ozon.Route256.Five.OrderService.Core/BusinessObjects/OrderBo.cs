@@ -7,7 +7,7 @@ public class OrderBo
     public decimal TotalPrice { get; init; }
     public decimal TotalWeight { get; init; }
     public OrderSourceBo Source { get; init; }
-    public DateTime DateCreated { get; init; }
+    public DateTimeOffset DateCreated { get; init; }
     public OrderStateBo State { get; init; }
     public CustomerBo? Customer { get; init; }
     public AddressBo? Address { get; init; }

@@ -14,7 +14,7 @@ public static class ServiceCollectionExtensions
     {
         SqlMapper.AddTypeHandler(new WarehouseDtoTypeMapper());
 
-        services.AddScoped<IConnectionCreator, ConnectionCreator>();
+        services.AddScoped<IConnectionFactory, ConnectionFactory>();
 
         const string PG_CONNECTION_STRING_KEY = "ROUTE256_PG_CONNECTION_STRING";
         string pgConnectionString =

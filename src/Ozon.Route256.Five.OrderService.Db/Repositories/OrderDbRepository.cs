@@ -1,5 +1,4 @@
-﻿using System.Text;
-using Dapper;
+﻿using Dapper;
 using Npgsql;
 using Ozon.Route256.Five.OrderService.Core.Repository;
 using Ozon.Route256.Five.OrderService.Core.Repository.Dto;
@@ -8,16 +7,16 @@ namespace Ozon.Route256.Five.OrderService.Db.Repositories;
 
 public sealed class OrderDbRepository : IOrderRepository
 {
-    private readonly IConnectionCreator _connectionCreator;
+    private readonly IConnectionFactory _connectionFactory;
 
-    public OrderDbRepository(IConnectionCreator connectionCreator)
+    public OrderDbRepository(IConnectionFactory connectionFactory)
     {
-        _connectionCreator = connectionCreator;
+        _connectionFactory = connectionFactory;
     }
 
     public async Task<OrderDto?> Find(long orderId, CancellationToken token)
     {
-        await using NpgsqlConnection connection = await _connectionCreator.GetConnection();
+        await using NpgsqlConnection connection = await _connectionFactory.GetConnection();
 
         const string SQL = @"
         SELECT
@@ -60,7 +59,7 @@ public sealed class OrderDbRepository : IOrderRepository
 
     public async Task Insert(OrderDto order, CancellationToken token)
     {
-        await using NpgsqlConnection connection = await _connectionCreator.GetConnection();
+        await using NpgsqlConnection connection = await _connectionFactory.GetConnection();
 
         const string SQL = @"
         INSERT INTO
@@ -108,7 +107,7 @@ public sealed class OrderDbRepository : IOrderRepository
 
     public async Task Update(OrderDto order, CancellationToken token)
     {
-        await using NpgsqlConnection connection = await _connectionCreator.GetConnection();
+        await using NpgsqlConnection connection = await _connectionFactory.GetConnection();
 
         const string SQL = @"
         UPDATE
@@ -159,7 +158,7 @@ public sealed class OrderDbRepository : IOrderRepository
         int customerId, DateTime? startDate, DateTime? endDate,
         int pageNumber, int itemsPerPage, CancellationToken token)
     {
-        await using NpgsqlConnection connection = await _connectionCreator.GetConnection();
+        await using NpgsqlConnection connection = await _connectionFactory.GetConnection();
 
         const string SQL = @"
         SELECT
@@ -217,57 +216,38 @@ public sealed class OrderDbRepository : IOrderRepository
         int pageNumber, int itemsPerPage,
         OrderingDirectionDto orderingDirection, CancellationToken token)
     {
-        const string SQL_START = @"
-        SELECT
-            id AS Id,
-            goods_count AS GoodsCount,
-            price AS TotalPrice,
-            weight AS TotalWeight,
-            order_source AS Source,
-            date_created AS DateCreated,
-            state AS State,
-            phone AS Phone,
-            customer_id AS CustomerId,
-            address_city AS City,
-            address_street AS Street,
-            address_building AS Building,
-            address_apartment AS Apartment,
-            address_latitude AS Latitude,
-            address_longitude AS Longitude,
-            address_region AS Region
-        FROM
-            orders
-        ";
+        SqlBuilder builder = new();
+        builder.Select("id AS Id");
+        builder.Select("goods_count AS GoodsCount");
+        builder.Select("price AS TotalPrice");
+        builder.Select("weight AS TotalWeight");
+        builder.Select("order_source AS Source");
+        builder.Select("date_created AS DateCreated");
+        builder.Select("state AS State");
+        builder.Select("phone AS Phone");
+        builder.Select("customer_id AS CustomerId");
+        builder.Select("address_city AS City");
+        builder.Select("address_street AS Street");
+        builder.Select("address_building AS Building");
+        builder.Select("address_apartment AS Apartment");
+        builder.Select("address_latitude AS Latitude");
+        builder.Select("address_longitude AS Longitude");
+        builder.Select("address_region AS Region");
 
-        List<string> whereConditions = new List<string>(2);
         if (regions != null && regions.Length > 0)
         {
-            whereConditions.Add("address_region = ANY(@regions)");
+            builder.Where("address_region = ANY(@regions)");
         }
         if (sources != null && sources.Length > 0)
         {
-            whereConditions.Add("order_source = ANY(@sources)");
+            builder.Where("order_source = ANY(@sources)");
         }
 
-        StringBuilder sql = new(SQL_START);
-        if (whereConditions.Count > 0)
-        {
-            sql.AppendLine("WHERE");
-        }
+        builder.OrderBy($"region {orderingDirection.ToString()}");
 
-        for (int i = 0; i < whereConditions.Count; i++)
-        {
-            if (i > 0)
-            {
-                sql.AppendLine("AND");
-            }
-            sql.AppendLine(whereConditions[i]);
-        }
-
-        sql.Append("ORDER BY region ");
-        sql.AppendLine(orderingDirection.ToString());
-
-        sql.AppendLine("LIMIT @limit OFFSET @offset");
+        SqlBuilder.Template? builderTemplate =
+            builder.AddTemplate("SELECT /**select**/ FROM orders /**where**/ /**orderby**/ LIMIT @limit OFFSET @offset");
+        string rawSql = builderTemplate.RawSql;
 
         var queryArguments = new
         {
@@ -277,9 +257,9 @@ public sealed class OrderDbRepository : IOrderRepository
             limit = itemsPerPage,
         };
 
-        await using NpgsqlConnection connection = await _connectionCreator.GetConnection();
+        await using NpgsqlConnection connection = await _connectionFactory.GetConnection();
         IEnumerable<OrderDto> orders = await connection.QueryAsync<OrderDto, AddressDto, OrderDto>(
-            sql.ToString(),
+            rawSql,
             (orderDto, addressDto) =>
             {
                 orderDto.Address = addressDto;
@@ -294,7 +274,22 @@ public sealed class OrderDbRepository : IOrderRepository
     public async Task<AggregateOrdersDto[]> AggregateOrders(string[]? regions, DateTime startDate,
         DateTime? endDate, CancellationToken token)
     {
-        const string SQL_START = @"
+        SqlBuilder builder = new();
+        builder.Where("date_created >= @startDate");
+        if (regions != null && regions.Length > 0)
+        {
+            builder.Where("address_region = ANY(@regions)");
+        }
+        if (endDate.HasValue)
+        {
+            builder.Where("date_created <= @endDate");
+        }
+
+        SqlBuilder.Template? builderTemplate =
+            builder.AddTemplate("SELECT * FROM orders /**where**/");
+        string innerSql = builderTemplate.RawSql;
+
+        const string AGGREGATION_SQL = @"
          SELECT
             address_region AS Region,
             SUM(price) AS TotalOrdersPrice,
@@ -303,29 +298,12 @@ public sealed class OrderDbRepository : IOrderRepository
             COUNT(DISTINCT customer_id) AS CustomersCount
         FROM
             (
-            SELECT
-                *
-            FROM
-                orders
-            WHERE
-                date_created >= @startDate
-                ";
-
-        StringBuilder sql = new(SQL_START);
-
-        if (regions != null && regions.Length > 0)
-        {
-            sql.AppendLine("AND address_region = ANY(@regions)");
-        }
-        if (endDate.HasValue)
-        {
-            sql.AppendLine("AND date_created <= @endDate");
-        }
-
-        sql.AppendLine(@"
+                {0}
             ) T
         GROUP BY address_region
-        ");
+        ";
+
+        string sql = string.Format(AGGREGATION_SQL, innerSql);
 
         var queryArguments = new
         {
@@ -334,9 +312,9 @@ public sealed class OrderDbRepository : IOrderRepository
             endDate,
         };
 
-        await using NpgsqlConnection connection = await _connectionCreator.GetConnection();
+        await using NpgsqlConnection connection = await _connectionFactory.GetConnection();
         IEnumerable<AggregateOrdersDto> orders =
-            await connection.QueryAsync<AggregateOrdersDto>(sql.ToString(), queryArguments);
+            await connection.QueryAsync<AggregateOrdersDto>(sql, queryArguments);
 
         return orders.ToArray();
     }

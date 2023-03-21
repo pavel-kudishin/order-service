@@ -1,5 +1,5 @@
 using Grpc.Core;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using Ozon.Route256.Five.OrderService.Core;
 using Ozon.Route256.Five.OrderService.Shared.ClientBalancing;
 
@@ -10,37 +10,22 @@ public sealed class SdConsumerHostedService : BackgroundService
     private readonly IDbStore _dbStore;
     private readonly SdService.SdServiceClient _client;
     private readonly ILogger<SdConsumerHostedService> _logger;
-    private readonly IConfiguration _configuration;
+    private readonly PostgresSettings _postgresSettings;
 
     public SdConsumerHostedService(
         IDbStore dbStore,
         SdService.SdServiceClient client,
         ILogger<SdConsumerHostedService> logger,
-        IConfiguration configuration)
+        IOptions<PostgresSettings> options)
     {
         _dbStore = dbStore;
         _client = client;
         _logger = logger;
-        _configuration = configuration;
+        _postgresSettings = options.Value;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        const string POSTGRES_LOGIN = "POSTGRES_LOGIN";
-        string login =
-            _configuration.GetValue<string>(POSTGRES_LOGIN)
-            ?? throw new InvalidConfigurationException(POSTGRES_LOGIN);
-
-        const string POSTGRES_PASSWORD = "POSTGRES_PASSWORD";
-        string password =
-            _configuration.GetValue<string>(POSTGRES_PASSWORD)
-            ?? throw new InvalidConfigurationException(POSTGRES_PASSWORD);
-
-        const string POSTGRES_DB = "POSTGRES_DB";
-        string db =
-            _configuration.GetValue<string>(POSTGRES_DB)
-            ?? throw new InvalidConfigurationException(POSTGRES_DB);
-
         while (!stoppingToken.IsCancellationRequested)
         {
             using AsyncServerStreamingCall<DbResourcesResponse>? stream = _client.DbResources(
@@ -62,7 +47,7 @@ public sealed class SdConsumerHostedService : BackgroundService
                     foreach (Replica? replica in response.Replicas)
                     {
                         string connectionString =
-                            $"Server={replica.Host};Port={replica.Port};User Id={login};Password={password};Database={db};";
+                            $"Server={replica.Host};Port={replica.Port};User Id={_postgresSettings.Login};Password={_postgresSettings.Password};Database={_postgresSettings.Db};";
 
                         DbEndpoint endpoint = new DbEndpoint(connectionString, GetDbReplicaType(replica.Type));
                         endpoints.Add(endpoint);

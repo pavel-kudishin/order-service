@@ -136,12 +136,13 @@ public static class MappingExtensions
     }
     public static OrderBo[] ToOrdersBo(this IEnumerable<OrderDto> orders, CustomerDto[] customers)
     {
-        Dictionary<int, CustomerDto> dictionary = customers.Distinct().ToDictionary(k => k.Id);
-        return orders.Select(order =>
-        {
-            dictionary.TryGetValue(order.CustomerId, out CustomerDto? customer);
-            return order.ToOrderBo(customer);
-        }).ToArray();
+        OrderBo[] orderBos = orders.GroupJoin(customers,
+                order => order.CustomerId,
+                customer => customer.Id,
+                (order, customerDtos) => order.ToOrderBo(customerDtos.FirstOrDefault()))
+            .ToArray();
+
+        return orderBos;
     }
 
     public static RegionBo[] ToRegionsBo(

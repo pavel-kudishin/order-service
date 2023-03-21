@@ -8,23 +8,24 @@ namespace Ozon.Route256.Five.OrderService.Db.Repositories;
 
 public sealed class RegionDbRepository : IRegionRepository
 {
-    private readonly IConnectionCreator _connectionCreator;
+    private readonly IConnectionFactory _connectionFactory;
 
-    public RegionDbRepository(IConnectionCreator connectionCreator)
+    public RegionDbRepository(IConnectionFactory connectionFactory)
     {
-        _connectionCreator = connectionCreator;
+        _connectionFactory = connectionFactory;
     }
 
     public async Task<RegionDto?> Find(string name, CancellationToken token)
     {
-        await using NpgsqlConnection connection = await _connectionCreator.GetConnection();
+        await using NpgsqlConnection connection = await _connectionFactory.GetConnection();
 
         const string SQL = @"
         SELECT
             name AS Name,
-            warehouse_coordinates AS Coordinates
+            w.coordinates AS Coordinates
         FROM
-            regions
+            regions r
+        INNER JOIN warehouses w ON r.warehouse_id = w.id
         WHERE
             name = @name
         LIMIT 1";
@@ -42,14 +43,15 @@ public sealed class RegionDbRepository : IRegionRepository
 
     public async Task<RegionDto[]> GetAll(CancellationToken token)
     {
-        await using NpgsqlConnection connection = await _connectionCreator.GetConnection();
+        await using NpgsqlConnection connection = await _connectionFactory.GetConnection();
 
         const string SQL = @"
         SELECT
             name AS Name,
-            warehouse_coordinates AS Coordinates
+            w.coordinates AS Coordinates
         FROM
-            regions";
+            regions r
+        INNER JOIN warehouses w ON r.warehouse_id = w.id";
 
         IEnumerable<RegionDto> query = await connection.QueryAsync<string, WarehouseDto, RegionDto>(
             SQL,
@@ -62,14 +64,15 @@ public sealed class RegionDbRepository : IRegionRepository
 
     public async Task<RegionDto[]> FindMany(IEnumerable<string> names, CancellationToken token)
     {
-        await using NpgsqlConnection connection = await _connectionCreator.GetConnection();
+        await using NpgsqlConnection connection = await _connectionFactory.GetConnection();
 
         const string SQL = @"
         SELECT
             name AS Name,
-            warehouse_coordinates AS Coordinates
+            w.coordinates AS Coordinates
         FROM
-            regions
+            regions r
+        INNER JOIN warehouses w ON r.warehouse_id = w.id
         WHERE
             name = ANY(@names)";
 

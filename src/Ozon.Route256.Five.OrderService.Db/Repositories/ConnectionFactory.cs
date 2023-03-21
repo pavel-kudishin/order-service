@@ -3,11 +3,11 @@ using Ozon.Route256.Five.OrderService.Shared.ClientBalancing;
 
 namespace Ozon.Route256.Five.OrderService.Db.Repositories;
 
-public class ConnectionCreator : IConnectionCreator
+public class ConnectionFactory : IConnectionFactory
 {
     private readonly IDbStore _dbStore;
 
-    public ConnectionCreator(IDbStore dbStore)
+    public ConnectionFactory(IDbStore dbStore)
     {
         _dbStore = dbStore;
     }
