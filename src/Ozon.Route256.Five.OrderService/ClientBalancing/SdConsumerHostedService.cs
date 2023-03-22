@@ -10,18 +10,15 @@ public sealed class SdConsumerHostedService : BackgroundService
     private readonly IDbStore _dbStore;
     private readonly SdService.SdServiceClient _client;
     private readonly ILogger<SdConsumerHostedService> _logger;
-    private readonly PostgresSettings _postgresSettings;
 
     public SdConsumerHostedService(
         IDbStore dbStore,
         SdService.SdServiceClient client,
-        ILogger<SdConsumerHostedService> logger,
-        IOptions<PostgresSettings> options)
+        ILogger<SdConsumerHostedService> logger)
     {
         _dbStore = dbStore;
         _client = client;
         _logger = logger;
-        _postgresSettings = options.Value;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -40,16 +37,15 @@ public sealed class SdConsumerHostedService : BackgroundService
                 while (await stream.ResponseStream.MoveNext(stoppingToken))
                 {
                     DbResourcesResponse response = stream.ResponseStream.Current;
-                    _logger.LogDebug("Получены новые данные из SD. Timestamp {Timestamp}", response.LastUpdated.ToDateTime());
+                    _logger.LogDebug(
+                        "Получены новые данные из SD. Timestamp {Timestamp}",
+                        response.LastUpdated.ToDateTime());
 
                     List<DbEndpoint> endpoints = new List<DbEndpoint>(response.Replicas.Capacity);
 
                     foreach (Replica? replica in response.Replicas)
                     {
-                        string connectionString =
-                            $"Server={replica.Host};Port={replica.Port};User Id={_postgresSettings.Login};Password={_postgresSettings.Password};Database={_postgresSettings.Db};";
-
-                        DbEndpoint endpoint = new DbEndpoint(connectionString, GetDbReplicaType(replica.Type));
+                        DbEndpoint endpoint = new(replica.Host, replica.Port, GetDbReplicaType(replica.Type));
                         endpoints.Add(endpoint);
                     }
 

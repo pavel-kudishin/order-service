@@ -6,6 +6,11 @@ namespace Ozon.Route256.Five.OrderService.Tests;
 
 public class DbStoreTests
 {
+    private const string HOST1 = "testHost1";
+    private const string HOST2 = "testHost2";
+    private const int PORT1 = 555;
+    protected const int PORT2 = 666;
+
     private readonly DbStore _dbStore;
 
     public DbStoreTests()
@@ -15,8 +20,8 @@ public class DbStoreTests
         _dbStore.UpdateEndpointsAsync(
             new[]
             {
-                new DbEndpoint("testHost1", DbReplicaType.Master),
-                new DbEndpoint("testHost2", DbReplicaType.Master),
+                new DbEndpoint(HOST1, PORT1, DbReplicaType.Master),
+                new DbEndpoint(HOST2, PORT2, DbReplicaType.Master),
             });
     }
 
@@ -24,12 +29,15 @@ public class DbStoreTests
     public async Task GetNextEndpointAsync_Successful()
     {
         DbEndpoint result = await _dbStore.GetNextEndpointAsync();
-        result.ConnectionString.Should().Be("testHost1");
+        result.Host.Should().Be(HOST1);
+        result.Port.Should().Be(PORT1);
 
         result = await _dbStore.GetNextEndpointAsync();
-        result.ConnectionString.Should().Be("testHost2");
+        result.Host.Should().Be(HOST2);
+        result.Port.Should().Be(PORT2);
 
         result = await _dbStore.GetNextEndpointAsync();
-        result.ConnectionString.Should().Be("testHost1");
+        result.Host.Should().Be(HOST1);
+        result.Port.Should().Be(PORT1);
     }
 }

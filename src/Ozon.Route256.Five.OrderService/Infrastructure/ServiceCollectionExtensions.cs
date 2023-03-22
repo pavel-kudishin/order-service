@@ -11,7 +11,6 @@ using Ozon.Route256.Five.OrderService.Core.Handlers.OrdersGet;
 using Ozon.Route256.Five.OrderService.Core.Handlers.OrderStatusGet;
 using Ozon.Route256.Five.OrderService.Core.Handlers.RegionsGet;
 using Ozon.Route256.Five.OrderService.Core.Redis;
-using Ozon.Route256.Five.OrderService.Core.Redis.Settings;
 using Ozon.Route256.Five.OrderService.Core.Repository;
 using Ozon.Route256.Five.OrderService.Core.Repository.Imp;
 using Ozon.Route256.Five.OrderService.Db;
@@ -19,6 +18,7 @@ using Ozon.Route256.Five.OrderService.Db.Repositories;
 using Ozon.Route256.Five.OrderService.Grpc;
 using Ozon.Route256.Five.OrderService.Kafka;
 using Ozon.Route256.Five.OrderService.Rest.Dto;
+using Ozon.Route256.Five.OrderService.Shared;
 using Ozon.Route256.Five.OrderService.Shared.ClientBalancing;
 using Ozon.Route256.Five.OrderService.Validators;
 
