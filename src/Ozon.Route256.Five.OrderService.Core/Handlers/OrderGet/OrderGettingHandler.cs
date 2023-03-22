@@ -28,8 +28,9 @@ public class OrderGettingHandler : IOrderGettingHandler
             return HandlerResult<OrderBo>.FromError(new OrderGettingException($"Order #{request.OrderId} not found"));
         }
 
+        CustomerDto? customerDto = await _customerRepository.Find(order.CustomerId, token);
 
-        OrderBo orderBo = order.ToOrderBo();
+        OrderBo orderBo = order.ToOrderBo(customerDto);
 
         return HandlerResult<OrderBo>.FromValue(orderBo);
     }

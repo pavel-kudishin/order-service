@@ -38,7 +38,7 @@ public sealed class OrderDto
     /// Дата заказа
     /// </summary>
     [Required]
-    public DateTime DateCreated { get; init; }
+    public DateTimeOffset DateCreated { get; init; }
 
     /// <summary>
     /// Статус заказа

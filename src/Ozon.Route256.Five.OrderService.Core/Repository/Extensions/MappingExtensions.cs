@@ -56,7 +56,7 @@ public static class MappingExtensions
         };
     }
 
-    public static OrderBo ToOrderBo(this OrderDto order)
+    public static OrderBo ToOrderBo(this OrderDto order, CustomerDto? customerDto)
     {
         return new OrderBo()
         {
@@ -67,8 +67,8 @@ public static class MappingExtensions
             Source = order.Source.OrderSourceBo(),
             DateCreated = order.DateCreated,
             State = order.State.ToOrderStateBo(),
-            Customer = order.Customer.ToCustomerBo(),
-            Address = order.Address.ToAddressBo(),
+            Customer = customerDto?.ToCustomerBo(),
+            Address = order.Address?.ToAddressBo(),
             Phone = order.Phone
 
         };
@@ -132,7 +132,17 @@ public static class MappingExtensions
 
     public static OrderBo[] ToOrdersBo(this IEnumerable<OrderDto> orders)
     {
-        return orders.Select(o => o.ToOrderBo()).ToArray();
+        return orders.Select(o => o.ToOrderBo(null)).ToArray();
+    }
+    public static OrderBo[] ToOrdersBo(this IEnumerable<OrderDto> orders, CustomerDto[] customers)
+    {
+        OrderBo[] orderBos = orders.GroupJoin(customers,
+                order => order.CustomerId,
+                customer => customer.Id,
+                (order, customerDtos) => order.ToOrderBo(customerDtos.FirstOrDefault()))
+            .ToArray();
+
+        return orderBos;
     }
 
     public static RegionBo[] ToRegionsBo(

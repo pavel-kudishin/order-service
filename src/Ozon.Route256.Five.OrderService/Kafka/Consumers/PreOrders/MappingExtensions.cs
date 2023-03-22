@@ -9,19 +9,18 @@ public static class MappingExtensions
         decimal totalPrice = order.Goods.Sum(g => g.Price * g.Quantity);
         decimal totalWeight = order.Goods.Sum(g => g.Weight * g.Quantity);
 
-        return new OrderDto(
-            order.Id,
-            order.Goods.Count(),
-            totalPrice,
-            totalWeight,
-            order.Source.ToOrderSourceDto(),
-            DateTime.UtcNow,
-            order.Customer.Address.Region,
-            OrderStateDto.Created,
-            customerDto,
-            order.Customer.Address.ToAddressDto(),
-            customerDto.MobileNumber
-        );
+        return new OrderDto(){
+            Id = order.Id,
+            GoodsCount = order.Goods.Count(),
+            TotalPrice = totalPrice,
+            TotalWeight = totalWeight,
+            Source = order.Source.ToOrderSourceDto(),
+            DateCreated = DateTime.UtcNow,
+            State = OrderStateDto.Created,
+            CustomerId = order.Customer.Id,
+            Address = order.Customer.Address.ToAddressDto(),
+            Phone = customerDto.MobileNumber
+        };
     }
 
     public static AddressDto ToAddressDto(this PreOrderAddressDto address)

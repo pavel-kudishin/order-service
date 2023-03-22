@@ -21,20 +21,17 @@ public class OrderEventsConsumerHandler
     public async Task<OrderEventsConsumerHandlerResult> Handle(
         string key, OrderEventsChangedDto message, CancellationToken token)
     {
-        OrderDto? orderDto = await _orderRepository.Find(message.OrderId, token);
+        OrderDto? orderDto = await _orderRepository.Find(message.Id, token);
 
         if (orderDto == null)
         {
-            _logger.LogError($"Order {message.OrderId} not found");
+            _logger.LogError($"Order {message.Id} not found");
             return OrderEventsConsumerHandlerResult.NotFound;
         }
 
-        OrderDto updatedOrder = orderDto with
-        {
-            State = message.NewState.ToOrderStateDto(),
-        };
+        orderDto.State = message.NewState.ToOrderStateDto();
 
-        await _orderRepository.Update(updatedOrder, token);
+        await _orderRepository.Update(orderDto, token);
 
         return OrderEventsConsumerHandlerResult.Success;
     }

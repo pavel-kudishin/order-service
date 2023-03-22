@@ -43,16 +43,16 @@ public class PreOrdersConsumerHandler: IKafkaConsumerHandler<string, PreOrderDto
 
         await _orderRepository.Insert(orderDto, token);
 
-        RegionDto? region = await _regionRepository.Find(orderDto.Region, token);
+        RegionDto? region = await _regionRepository.Find(orderDto.Address!.Region, token);
 
         if (region == null)
         {
-            _logger.LogError($"Region {orderDto.Region} not found");
+            _logger.LogError($"Region {orderDto.Address.Region} not found");
             return PreOrdersConsumerHandlerResult.RegionNotFound;
         }
 
-        double latitude = orderDto.Address.Latitude % 180; // Приходят случайные координаты из customer-service
-        double longitude = orderDto.Address.Longitude % 180; // Подровняем случайные координаты
+        double latitude = message.Customer.Address.Latitude % 180; // Приходят случайные координаты из customer-service
+        double longitude = message.Customer.Address.Longitude % 180; // Подровняем случайные координаты
         double distance = Distance(
             latitude,
             longitude,
@@ -69,6 +69,8 @@ public class PreOrdersConsumerHandler: IKafkaConsumerHandler<string, PreOrderDto
 
         NewOrderDto order = new(orderDto.Id);
         await _newOrdersKafkaPublisher.PublishToKafka(order, token);
+
+        _logger.LogDebug($"Order #{message.Id} published");
 
         return PreOrdersConsumerHandlerResult.Success;
     }

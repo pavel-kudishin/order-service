@@ -13,9 +13,13 @@ using Ozon.Route256.Five.OrderService.Core.Handlers.RegionsGet;
 using Ozon.Route256.Five.OrderService.Core.Redis;
 using Ozon.Route256.Five.OrderService.Core.Repository;
 using Ozon.Route256.Five.OrderService.Core.Repository.Imp;
+using Ozon.Route256.Five.OrderService.Db;
+using Ozon.Route256.Five.OrderService.Db.Repositories;
 using Ozon.Route256.Five.OrderService.Grpc;
 using Ozon.Route256.Five.OrderService.Kafka;
 using Ozon.Route256.Five.OrderService.Rest.Dto;
+using Ozon.Route256.Five.OrderService.Shared;
+using Ozon.Route256.Five.OrderService.Shared.ClientBalancing;
 using Ozon.Route256.Five.OrderService.Validators;
 
 namespace Ozon.Route256.Five.OrderService.Infrastructure;
@@ -78,22 +82,23 @@ public static class ServiceCollectionExtensions
             .AddHostedService<SdConsumerHostedService>()
             .AddRedis(configuration)
             .AddKafka(configuration)
-            .AddSwaggerGen();
+            .AddSwaggerGen()
+            .AddMigrations(configuration);
 
         services.AddSingleton<IDbStore, DbStore>();
 
         services.AddScoped<IValidator<OrdersByCustomerRequestDto>, OrdersByCustomerRequestDtoValidator>();
         services.AddScoped<IValidator<AggregatedOrdersRequestDto>, AggregatedOrdersRequestDtoValidator>();
 
+        services.Configure<PostgresSettings>(configuration.GetSection("Postgres"));
+
         return services;
     }
 
     public static IServiceCollection AddRepositories(this IServiceCollection services)
     {
-        services.AddSingleton<InMemoryStorage>();
-
-        services.AddScoped<IOrderRepository, OrderInMemoryRepository>();
-        services.AddScoped<IRegionRepository, RegionInMemoryRepository>();
+        services.AddScoped<IOrderRepository, OrderDbRepository>();
+        services.AddScoped<IRegionRepository, RegionDbRepository>();
         services.AddScoped<ICustomerRepository, CustomerRedisRepository>();
 
         return services;

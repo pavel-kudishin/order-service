@@ -10,19 +10,18 @@ public static class TestData
 
     public static OrderDto GetTestOrder()
     {
-        return new OrderDto(
-            ORDER_ID,
-            5,
-            200.5m,
-            320,
-            OrderSourceDto.WebSite,
-            DateTime.UtcNow,
-            GetTestRegion().Name,
-            OrderStateDto.Created,
-            GetTestCustomer(),
-            GetTestAddress(),
-            "+7 905 200 30 40"
-        );
+        return new OrderDto(){
+            Id = ORDER_ID,
+            GoodsCount = 5,
+            TotalPrice = 200.5m,
+            TotalWeight = 320,
+            Source = OrderSourceDto.WebSite,
+            DateCreated = DateTime.UtcNow,
+            State = OrderStateDto.Created,
+            CustomerId = GetTestCustomer().Id,
+            Address = GetTestAddress(),
+            Phone = "+7 905 200 30 40"
+        };
     }
 
     public static CustomerDto GetTestCustomer()

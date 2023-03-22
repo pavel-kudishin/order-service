@@ -4,6 +4,10 @@
 /src/Ozon.Route256.Five.OrderService.Core/obj
 /tests/Ozon.Route256.Five.OrderService.Tests/bin
 /tests/Ozon.Route256.Five.OrderService.Tests/obj
+/src/Ozon.Route256.Five.OrderService.Db/bin
+/src/Ozon.Route256.Five.OrderService.Db/obj
+/src/Ozon.Route256.Five.OrderService.Shared/bin
+/src/Ozon.Route256.Five.OrderService.Shared/obj
 /bin
 /obj
 /.vs

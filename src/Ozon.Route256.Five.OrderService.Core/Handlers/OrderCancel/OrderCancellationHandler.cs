@@ -34,12 +34,9 @@ public class OrderCancellationHandler : IOrderCancellationHandler
             return HandlerResult.FromError(new OrderCancellationException(result.Error.BusinessError));
         }
 
-        OrderDto cancelledOrder = order with
-        {
-            State = OrderStateDto.Cancelled,
-        };
+        order.State = OrderStateDto.Cancelled;
 
-        await _orderRepository.Update(cancelledOrder, token);
+        await _orderRepository.Update(order, token);
 
         return HandlerResult.Ok;
     }

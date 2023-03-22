@@ -1,6 +1,6 @@
 ﻿namespace Ozon.Route256.Five.OrderService.Kafka.Consumers.OrderEvents;
 
 public record OrderEventsChangedDto (
-    long OrderId,
+    long Id,
     OrderStateDto NewState,
     DateTimeOffset ChangedAt);

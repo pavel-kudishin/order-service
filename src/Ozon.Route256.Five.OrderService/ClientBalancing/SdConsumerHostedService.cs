@@ -1,4 +1,7 @@
 using Grpc.Core;
+using Microsoft.Extensions.Options;
+using Ozon.Route256.Five.OrderService.Core;
+using Ozon.Route256.Five.OrderService.Shared.ClientBalancing;
 
 namespace Ozon.Route256.Five.OrderService.ClientBalancing;
 
@@ -34,13 +37,15 @@ public sealed class SdConsumerHostedService : BackgroundService
                 while (await stream.ResponseStream.MoveNext(stoppingToken))
                 {
                     DbResourcesResponse response = stream.ResponseStream.Current;
-                    _logger.LogDebug("Получены новые данные из SD. Timestamp {Timestamp}", response.LastUpdated.ToDateTime());
+                    _logger.LogDebug(
+                        "Получены новые данные из SD. Timestamp {Timestamp}",
+                        response.LastUpdated.ToDateTime());
 
                     List<DbEndpoint> endpoints = new List<DbEndpoint>(response.Replicas.Capacity);
 
                     foreach (Replica? replica in response.Replicas)
                     {
-                        DbEndpoint endpoint = new DbEndpoint($"{replica.Host}:{replica.Port}", GetDbReplicaType(replica.Type));
+                        DbEndpoint endpoint = new(replica.Host, replica.Port, GetDbReplicaType(replica.Type));
                         endpoints.Add(endpoint);
                     }
 
