@@ -6,12 +6,22 @@ namespace Ozon.Route256.Five.OrderService
     {
         public static async Task Main(string[] args)
         {
-            await Host
+            IHost host = Host
                 .CreateDefaultBuilder(args)
                 .ConfigureWebHostDefaults(builder => builder.UseStartup<Startup>())
-                .Build()
-                .Migrate()
-                .RunAsync();
+                .Build();
+
+            string? environmentVariable = Environment.GetEnvironmentVariable("MIGRATE");
+            bool doMigrate = environmentVariable != null && bool.TryParse(environmentVariable, out bool migrate) && migrate;
+
+            if (doMigrate)
+            {
+                await host.Migrate();
+            }
+            else
+            {
+                await host.RunAsync();
+            }
         }
     }
 }

@@ -5,7 +5,7 @@ namespace Ozon.Route256.Five.OrderService.Core.Handlers.OrdersGet;
 public interface IOrdersGettingHandler: IHandler<IOrdersGettingHandler.Request, OrderBo[]>
 {
     public record Request(
-        string[]? RegionIds,
+        string[]? RegionNames,
         OrderSourceBo[]? Sources,
         int PageNumber,
         int ItemsPerPage,

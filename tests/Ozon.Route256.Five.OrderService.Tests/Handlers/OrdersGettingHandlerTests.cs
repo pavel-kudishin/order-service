@@ -20,7 +20,7 @@ public class OrdersGettingHandlerTests
             .Returns(Task.FromResult(TestData.GetTestRegions()));
 
         Mock<IOrderRepository> orderRepository = new();
-        orderRepository.Setup(repo => repo.Filter(null, null, 0, 10, OrderingDirectionDto.Asc, CancellationToken.None))
+        orderRepository.Setup(repo => repo.Filter(new[] { TestData.REGION_NAME }, null, 0, 10, OrderingDirectionDto.Asc, CancellationToken.None))
             .Returns(Task.FromResult(TestData.GetTestOrders()));
 
         Mock<ICustomerRepository> customerRepository = new();

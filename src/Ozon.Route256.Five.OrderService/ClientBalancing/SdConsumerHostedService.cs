@@ -1,6 +1,6 @@
 using Grpc.Core;
 using Microsoft.Extensions.Options;
-using Ozon.Route256.Five.OrderService.Core;
+using Ozon.Route256.Five.OrderService.Shared;
 using Ozon.Route256.Five.OrderService.Shared.ClientBalancing;
 
 namespace Ozon.Route256.Five.OrderService.ClientBalancing;
@@ -10,26 +10,30 @@ public sealed class SdConsumerHostedService : BackgroundService
     private readonly IDbStore _dbStore;
     private readonly SdService.SdServiceClient _client;
     private readonly ILogger<SdConsumerHostedService> _logger;
+    private readonly PostgresSettings _postgresSettings;
 
     public SdConsumerHostedService(
         IDbStore dbStore,
         SdService.SdServiceClient client,
-        ILogger<SdConsumerHostedService> logger)
+        ILogger<SdConsumerHostedService> logger,
+        IOptions<PostgresSettings> options)
     {
         _dbStore = dbStore;
         _client = client;
         _logger = logger;
+        _postgresSettings = options.Value;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         while (!stoppingToken.IsCancellationRequested)
         {
+            DbResourcesRequest request = new()
+            {
+                ClusterName = _postgresSettings.Cluster
+            };
             using AsyncServerStreamingCall<DbResourcesResponse>? stream = _client.DbResources(
-                new DbResourcesRequest
-                {
-                    ClusterName = "cluster"
-                },
+                request,
                 cancellationToken: stoppingToken);
 
             try
@@ -41,15 +45,17 @@ public sealed class SdConsumerHostedService : BackgroundService
                         "Получены новые данные из SD. Timestamp {Timestamp}",
                         response.LastUpdated.ToDateTime());
 
-                    List<DbEndpoint> endpoints = new List<DbEndpoint>(response.Replicas.Capacity);
+                    List<DbEndpoint> endpoints = new List<DbEndpoint>(response.Replicas.Count);
 
                     foreach (Replica? replica in response.Replicas)
                     {
-                        DbEndpoint endpoint = new(replica.Host, replica.Port, GetDbReplicaType(replica.Type));
+                        DbReplicaType replicaType = GetDbReplicaType(replica.Type);
+                        int[] buckets = replica.Buckets.ToArray();
+                        DbEndpoint endpoint = new(replica.Host, replica.Port, replicaType, buckets);
                         endpoints.Add(endpoint);
                     }
 
-                    await _dbStore.UpdateEndpointsAsync(endpoints);
+                    _dbStore.UpdateEndpoints(endpoints);
                 }
             }
             catch (RpcException exc)

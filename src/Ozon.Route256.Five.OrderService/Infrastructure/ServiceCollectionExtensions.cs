@@ -83,7 +83,7 @@ public static class ServiceCollectionExtensions
             .AddRedis(configuration)
             .AddKafka(configuration)
             .AddSwaggerGen()
-            .AddMigrations(configuration);
+            .AdDb(configuration);
 
         services.AddSingleton<IDbStore, DbStore>();
 

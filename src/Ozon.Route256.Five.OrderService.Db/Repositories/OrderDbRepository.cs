@@ -1,22 +1,33 @@
-﻿using Dapper;
-using Npgsql;
+﻿using System.Data.Common;
+using Dapper;
 using Ozon.Route256.Five.OrderService.Core.Repository;
 using Ozon.Route256.Five.OrderService.Core.Repository.Dto;
+using Ozon.Route256.Five.OrderService.Shared.ClientBalancing;
 
 namespace Ozon.Route256.Five.OrderService.Db.Repositories;
 
 public sealed class OrderDbRepository : IOrderRepository
 {
     private readonly IConnectionFactory _connectionFactory;
+    private readonly IShardingRule<long> _longShardingRule;
+    private readonly IShardingRule<string> _stringShardingRule;
+    private readonly IDbStore _dbStore;
 
-    public OrderDbRepository(IConnectionFactory connectionFactory)
+    public OrderDbRepository(
+        IConnectionFactory connectionFactory,
+        IShardingRule<long> longShardingRule,
+        IShardingRule<string> stringShardingRule,
+        IDbStore dbStore)
     {
         _connectionFactory = connectionFactory;
+        _longShardingRule = longShardingRule;
+        _stringShardingRule = stringShardingRule;
+        _dbStore = dbStore;
     }
 
     public async Task<OrderDto?> Find(long orderId, CancellationToken token)
     {
-        await using NpgsqlConnection connection = await _connectionFactory.GetConnection();
+        await using DbConnection connection = _connectionFactory.GetConnectionByKey(orderId);
 
         const string SQL = @"
         SELECT
@@ -37,7 +48,7 @@ public sealed class OrderDbRepository : IOrderRepository
             address_longitude AS Longitude,
             address_region AS Region
         FROM
-            orders
+            __bucket__.orders
         WHERE
             id = @orderId
         LIMIT 1";
@@ -59,11 +70,11 @@ public sealed class OrderDbRepository : IOrderRepository
 
     public async Task Insert(OrderDto order, CancellationToken token)
     {
-        await using NpgsqlConnection connection = await _connectionFactory.GetConnection();
+        await using DbConnection connection = _connectionFactory.GetConnectionByKey(order.Id);
 
         const string SQL = @"
         INSERT INTO
-            public.orders
+            __bucket__.orders
         (
             id, goods_count, price, weight,
             order_source, date_created,
@@ -80,7 +91,7 @@ public sealed class OrderDbRepository : IOrderRepository
             @Street, @Building,
             @Apartment, @Region,
             @Latitude, @Longitude
-        );";
+        )";
 
         var queryArguments = new
         {
@@ -103,15 +114,73 @@ public sealed class OrderDbRepository : IOrderRepository
         };
 
         await connection.ExecuteAsync(SQL, queryArguments);
+
+        await InsertIndexOnCustomerId(order);
+        await InsertIndexOnRegionName(order);
+    }
+
+    private async Task InsertIndexOnRegionName(OrderDto order)
+    {
+        const string SQL = @"
+        INSERT INTO
+            __bucket__.index_order_id_region_name
+        (
+            order_id,
+            region_name,
+            date_created,
+            order_source
+        )
+        VALUES
+        (
+            @order_id,
+            @region_name,
+            @date_created,
+            @order_source
+        )";
+
+        DynamicParameters param = new();
+        param.Add("@order_id", order.Id);
+        param.Add("@region_name", order.Address?.Region);
+        param.Add("@date_created", order.DateCreated);
+        param.Add("@order_source", order.Source);
+
+        await using DbConnection connection = _connectionFactory.GetConnectionByKey(order.Address!.Region);
+        await connection.ExecuteAsync(SQL, param);
+    }
+
+    private async Task InsertIndexOnCustomerId(OrderDto order)
+    {
+        const string SQL = @"
+        INSERT INTO
+            __bucket__.index_order_id_customer_id
+        (
+            order_id,
+            customer_id,
+            date_created
+        )
+        VALUES
+        (
+            @order_id,
+            @customer_id,
+            @date_created
+        )";
+
+        DynamicParameters param = new();
+        param.Add("@order_id", order.Id);
+        param.Add("@customer_id", order.CustomerId);
+        param.Add("@date_created", order.DateCreated);
+
+        await using DbConnection connection = _connectionFactory.GetConnectionByKey(order.CustomerId);
+        await connection.ExecuteAsync(SQL, param);
     }
 
     public async Task Update(OrderDto order, CancellationToken token)
     {
-        await using NpgsqlConnection connection = await _connectionFactory.GetConnection();
+        await using DbConnection connection = _connectionFactory.GetConnectionByKey(order.Id);
 
         const string SQL = @"
         UPDATE
-            public.orders
+            __bucket__.orders
         SET
             goods_count=@GoodsCount,
             price=@TotalPrice,
@@ -158,63 +227,12 @@ public sealed class OrderDbRepository : IOrderRepository
         int customerId, DateTime? startDate, DateTime? endDate,
         int pageNumber, int itemsPerPage, CancellationToken token)
     {
-        await using NpgsqlConnection connection = await _connectionFactory.GetConnection();
-
-        const string SQL = @"
-        SELECT
-            id AS Id,
-            goods_count AS GoodsCount,
-            price AS TotalPrice,
-            weight AS TotalWeight,
-            order_source AS Source,
-            date_created AS DateCreated,
-            state AS State,
-            phone AS Phone,
-            customer_id AS CustomerId,
-            address_city AS City,
-            address_street AS Street,
-            address_building AS Building,
-            address_apartment AS Apartment,
-            address_latitude AS Latitude,
-            address_longitude AS Longitude,
-            address_region AS Region
-        FROM
-            orders
-        WHERE
-            customer_id = @customerId
-            AND
-            (@startDate IS NULL OR @startDate <= date_created)
-            AND
-            (@endDate IS NULL OR @endDate >= date_created)
-        ORDER BY id
-        LIMIT @limit
-        OFFSET @offset";
-
-        var queryArguments = new
-        {
-            customerId,
-            startDate,
-            endDate,
-            offset = pageNumber * itemsPerPage,
-            limit = itemsPerPage,
-        };
-
-        IEnumerable<OrderDto> orders = await connection.QueryAsync<OrderDto, AddressDto, OrderDto>(
-            SQL,
-            (orderDto, addressDto) =>
-            {
-                orderDto.Address = addressDto;
-                return orderDto;
-            },
-            queryArguments,
-            splitOn: "City");
-
-        return orders.ToArray();
+        IEnumerable<long> orderIds = await GetOrderIdsFromIndex(customerId, startDate, endDate, pageNumber, itemsPerPage);
+        OrderDto[] orders = await GetOrdersByIds(orderIds);
+        return orders.OrderBy(o => o.Id).ToArray();
     }
 
-    public async Task<OrderDto[]> Filter(string[]? regions, OrderSourceDto[]? sources,
-        int pageNumber, int itemsPerPage,
-        OrderingDirectionDto orderingDirection, CancellationToken token)
+    private async Task<OrderDto[]> GetOrdersByIds(IEnumerable<long> orderIds)
     {
         SqlBuilder builder = new();
         builder.Select("id AS Id");
@@ -233,63 +251,189 @@ public sealed class OrderDbRepository : IOrderRepository
         builder.Select("address_latitude AS Latitude");
         builder.Select("address_longitude AS Longitude");
         builder.Select("address_region AS Region");
-
-        if (regions != null && regions.Length > 0)
-        {
-            builder.Where("address_region = ANY(@regions)");
-        }
-        if (sources != null && sources.Length > 0)
-        {
-            builder.Where("order_source = ANY(@sources)");
-        }
-
-        builder.OrderBy($"region {orderingDirection.ToString()}");
+        builder.Where("id = ANY(@order_ids)");
 
         SqlBuilder.Template? builderTemplate =
-            builder.AddTemplate("SELECT /**select**/ FROM orders /**where**/ /**orderby**/ LIMIT @limit OFFSET @offset");
+            builder.AddTemplate(@"
+            SELECT
+                /**select**/
+            FROM __bucket__.orders
+                /**where**/");
         string rawSql = builderTemplate.RawSql;
 
-        var queryArguments = new
+        List<OrderDto> result = new();
+        Dictionary<int, long[]>? bucketToOrderIdsMap = GetBucketToOrderIdsMap(orderIds);
+        if (bucketToOrderIdsMap != null)
         {
-            regions,
-            sources = sources?.Select(s => (int)s).ToArray(),
-            offset = pageNumber * itemsPerPage,
-            limit = itemsPerPage,
-        };
-
-        await using NpgsqlConnection connection = await _connectionFactory.GetConnection();
-        IEnumerable<OrderDto> orders = await connection.QueryAsync<OrderDto, AddressDto, OrderDto>(
-            rawSql,
-            (orderDto, addressDto) =>
+            foreach ((int bucketId, long[] idsInBucket) in bucketToOrderIdsMap)
             {
-                orderDto.Address = addressDto;
-                return orderDto;
-            },
-            queryArguments,
-            splitOn: "City");
+                DynamicParameters orderParams = new();
+                orderParams.Add("@order_ids", idsInBucket);
 
-        return orders.ToArray();
+                await using DbConnection connection = _connectionFactory.GetConnectionByBucket(bucketId);
+                IEnumerable<OrderDto> orders = await connection.QueryAsync<OrderDto, AddressDto, OrderDto>(
+                    rawSql,
+                    (orderDto, addressDto) =>
+                    {
+                        orderDto.Address = addressDto;
+                        return orderDto;
+                    },
+                    orderParams,
+                    splitOn: "City");
+
+                result.AddRange(orders);
+            }
+        }
+
+        return result.ToArray();
     }
 
-    public async Task<AggregateOrdersDto[]> AggregateOrders(string[]? regions, DateTime startDate,
-        DateTime? endDate, CancellationToken token)
+    private Dictionary<int, long[]>? GetBucketToOrderIdsMap(IEnumerable<long> orderIds)
     {
-        SqlBuilder builder = new();
-        builder.Where("date_created >= @startDate");
-        if (regions != null && regions.Length > 0)
+        Dictionary<int, long[]>? bucketToOrderIdsMap =
+            orderIds?
+                .Select(orderId =>
+                    (BucketId: _longShardingRule.GetBucketId(orderId, _dbStore.BucketsCount), OrderId: orderId))
+                .GroupBy(x => x.BucketId)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Select(x => x.OrderId).ToArray());
+
+        return bucketToOrderIdsMap;
+    }
+
+    private async Task<IEnumerable<long>> GetOrderIdsFromIndex(
+        int customerId,
+        DateTime? startDate,
+        DateTime? endDate,
+        int pageNumber,
+        int itemsPerPage)
+    {
+        const string SQL = @"
+        SELECT
+            order_id
+        FROM
+            __bucket__.index_order_id_customer_id
+        WHERE
+            customer_id = @customer_id
+            AND
+            (@start_date IS NULL OR @start_date <= date_created)
+            AND
+            (@end_date IS NULL OR @end_date >= date_created)
+        ORDER BY order_id
+        LIMIT @limit
+        OFFSET @offset";
+
+        DynamicParameters indexParams = new();
+        indexParams.Add("@customer_id", customerId);
+        indexParams.Add("@start_date", startDate);
+        indexParams.Add("@end_date", endDate);
+        indexParams.Add("@limit", itemsPerPage);
+        indexParams.Add("@offset", pageNumber * itemsPerPage);
+
+        await using DbConnection connection = _connectionFactory.GetConnectionByKey(customerId);
+        IEnumerable<long>? orderIds = await connection.QueryAsync<long>(SQL, indexParams);
+        return orderIds;
+    }
+
+    public async Task<OrderDto[]> Filter(
+        string[]? regions,
+        OrderSourceDto[]? sources,
+        int pageNumber,
+        int itemsPerPage,
+        OrderingDirectionDto orderingDirection,
+        CancellationToken token)
+    {
+        if (regions == null || regions.Length == 0)
         {
-            builder.Where("address_region = ANY(@regions)");
-        }
-        if (endDate.HasValue)
-        {
-            builder.Where("date_created <= @endDate");
+            return Array.Empty<OrderDto>();
         }
 
-        SqlBuilder.Template? builderTemplate =
-            builder.AddTemplate("SELECT * FROM orders /**where**/");
-        string innerSql = builderTemplate.RawSql;
+        long[] orderIds = await GetOrderIdsFromIndex(regions, sources, pageNumber, itemsPerPage, orderingDirection);
+        OrderDto[] orders = await GetOrdersByIds(orderIds);
+        return orders.OrderBy(o => o.Address?.Region).ToArray();
+    }
 
-        const string AGGREGATION_SQL = @"
+    private async Task<long[]> GetOrderIdsFromIndex(
+        string[] regions,
+        OrderSourceDto[]? sources,
+        int pageNumber,
+        int itemsPerPage,
+        OrderingDirectionDto orderingDirection)
+    {
+        IOrderedEnumerable<string> orderedRegions =
+            orderingDirection == OrderingDirectionDto.Asc
+                ? regions.OrderBy(r => r)
+                : regions.OrderByDescending(r => r);
+
+        List<long> orderIds = new(itemsPerPage);
+        int skippedOrdersCount = 0; // Считаем сколько заказов уже пропущено для пейджинга
+        foreach (string region in orderedRegions)
+        {
+            // По каждому региону добавляем заказы пока не наберем itemsPerPage
+            if (orderIds.Count >= itemsPerPage)
+            {
+                break;
+            }
+
+            SqlBuilder builder = new();
+            builder.Select("order_id");
+            builder.Where("region_name = @region_name");
+            if (sources != null && sources.Length > 0)
+            {
+                builder.Where("order_source = ANY(@sources)");
+            }
+            SqlBuilder.Template? builderTemplate =
+                builder.AddTemplate(@"
+            SELECT
+                /**select**/
+            FROM __bucket__.index_order_id_region_name
+                /**where**/
+                /**orderby**/
+            LIMIT @limit");
+            string rawSql = builderTemplate.RawSql;
+
+            // Осталось найти столько элементов
+            int limit = (pageNumber + 1) * itemsPerPage - skippedOrdersCount - orderIds.Count;
+
+            DynamicParameters indexParams = new();
+            indexParams.Add("@region_name", region);
+            indexParams.Add("@sources", sources?.Select(s => (int)s).ToArray());
+            indexParams.Add("@limit", limit);
+
+            await using DbConnection connection = _connectionFactory.GetConnectionByKey(region);
+            IEnumerable<long>? ids = await connection.QueryAsync<long>(rawSql, indexParams);
+            long[] regionOrderIds = ids.ToArray();
+
+            if (skippedOrdersCount + regionOrderIds.Length <= pageNumber * itemsPerPage)
+            {
+                // Если еще не дошли до нужной страницы заказов
+                skippedOrdersCount += regionOrderIds.Length;
+            }
+            else
+            {
+                // Дошли до нужной страницы
+                IEnumerable<long> restOfOrders = regionOrderIds.Skip(pageNumber * itemsPerPage - skippedOrdersCount);
+                orderIds.AddRange(restOfOrders);
+                skippedOrdersCount = pageNumber * itemsPerPage;
+            }
+        }
+
+        return orderIds.ToArray();
+    }
+
+    public async Task<AggregateOrdersDto[]> AggregateOrders(
+        string[]? regions,
+        DateTime startDate,
+        DateTime? endDate,
+        CancellationToken token)
+    {
+        if (regions == null || regions.Length == 0)
+        {
+            return Array.Empty<AggregateOrdersDto>();
+        }
+
+        const string SQL = @"
          SELECT
             address_region AS Region,
             SUM(price) AS TotalOrdersPrice,
@@ -298,24 +442,92 @@ public sealed class OrderDbRepository : IOrderRepository
             COUNT(DISTINCT customer_id) AS CustomersCount
         FROM
             (
-                {0}
+                SELECT * FROM __bucket__.orders WHERE id = ANY(@order_ids)
             ) T
         GROUP BY address_region
         ";
 
-        string sql = string.Format(AGGREGATION_SQL, innerSql);
+        long[] orderIds = await GetOrderIdsFromIndex(regions, startDate, endDate, token);
 
-        var queryArguments = new
+        List<AggregateOrdersDto> result = new();
+        Dictionary<int, long[]>? bucketToOrderIdsMap = GetBucketToOrderIdsMap(orderIds);
+        if (bucketToOrderIdsMap != null)
         {
-            regions,
-            startDate,
-            endDate,
-        };
+            foreach ((int bucketId, long[] idsInBucket) in bucketToOrderIdsMap)
+            {
+                DynamicParameters orderParams = new();
+                orderParams.Add("@order_ids", idsInBucket);
 
-        await using NpgsqlConnection connection = await _connectionFactory.GetConnection();
-        IEnumerable<AggregateOrdersDto> orders =
-            await connection.QueryAsync<AggregateOrdersDto>(sql, queryArguments);
+                await using DbConnection connection = _connectionFactory.GetConnectionByBucket(bucketId);
+                IEnumerable<AggregateOrdersDto> orders =
+                    await connection.QueryAsync<AggregateOrdersDto>(SQL, orderParams);
 
-        return orders.ToArray();
+                result.AddRange(orders);
+            }
+        }
+
+        AggregateOrdersDto[] aggregateOrders = result
+            .GroupBy(o => o.Region)
+            .Select(g =>
+            {
+                AggregateOrdersDto[] orderDtos = g.ToArray();
+                return new AggregateOrdersDto()
+                {
+                    Region = g.Key,
+                    OrdersCount = orderDtos.Sum(a => a.OrdersCount),
+                    TotalWeight = orderDtos.Sum(a => a.TotalWeight),
+                    CustomersCount = orderDtos.Sum(a => a.CustomersCount),
+                    TotalOrdersPrice = orderDtos.Sum(a => a.TotalOrdersPrice),
+                };
+            })
+            .ToArray();
+
+        return aggregateOrders;
+    }
+
+    private async Task<long[]> GetOrderIdsFromIndex(
+        string[] regions,
+        DateTime startDate,
+        DateTime? endDate,
+        CancellationToken token)
+    {
+        Dictionary<int, string[]> bucketToRegionNamesMap =
+            regions
+                .Select(regionName =>
+                    (BucketId: _stringShardingRule.GetBucketId(regionName, _dbStore.BucketsCount), RegionName: regionName))
+                .GroupBy(x => x.BucketId)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Select(x => x.RegionName).ToArray());
+
+        const string SQL = @"
+        SELECT
+            order_id
+        FROM
+            __bucket__.index_order_id_region_name
+        WHERE
+            region_name = ANY(@region_names)
+            AND
+            (@start_date <= date_created)
+            AND
+            (@end_date IS NULL OR @end_date >= date_created)
+        ";
+
+        List<long> result = new();
+
+        foreach ((int bucketId, string[] namesInBucket) in bucketToRegionNamesMap)
+        {
+            DynamicParameters indexParams = new();
+            indexParams.Add("@region_names", namesInBucket);
+            indexParams.Add("@start_date", startDate);
+            indexParams.Add("@end_date", endDate);
+
+            await using DbConnection connection = _connectionFactory.GetConnectionByBucket(bucketId);
+            IEnumerable<long>? orderIds = await connection.QueryAsync<long>(SQL, indexParams);
+
+            result.AddRange(orderIds);
+        }
+
+        return result.ToArray();
     }
 }
