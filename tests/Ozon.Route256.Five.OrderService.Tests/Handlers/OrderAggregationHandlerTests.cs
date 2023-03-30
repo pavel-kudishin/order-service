@@ -23,7 +23,8 @@ public class OrderAggregationHandlerTests
         DateTime endDate = DateTime.UtcNow;
 
         Mock<IOrderRepository> orderRepository = new();
-        orderRepository.Setup(repo => repo.AggregateOrders(null, startDate, endDate, CancellationToken.None))
+        orderRepository.Setup(repo =>
+                repo.AggregateOrders(new[] { TestData.REGION_NAME }, startDate, endDate, CancellationToken.None))
             .Returns(Task.FromResult(TestData.GetTestAggregateOrders()));
 
         OrderAggregationHandler handler =

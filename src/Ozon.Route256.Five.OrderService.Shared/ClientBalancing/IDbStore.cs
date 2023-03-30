@@ -2,7 +2,9 @@ namespace Ozon.Route256.Five.OrderService.Shared.ClientBalancing;
 
 public interface IDbStore
 {
-    Task UpdateEndpointsAsync(IReadOnlyCollection<DbEndpoint> dbEndpoints);
+    void UpdateEndpoints(IReadOnlyCollection<DbEndpoint> dbEndpoints);
 
-    Task<DbEndpoint> GetNextEndpointAsync();
+    DbEndpoint GetEndpoint(int bucketId);
+
+    int BucketsCount { get; }
 }

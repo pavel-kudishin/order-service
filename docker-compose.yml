@@ -10,10 +10,11 @@ services:
      - ROUTE256_SERVICE_DISCOVERY_ADDRESS=http://host.docker.internal:5084
      - ROUTE256_LOGISTICS_SIMULATOR_ADDRESS=http://host.docker.internal:5085
      - ROUTE256_CUSTOMER_SERVICE_ADDRESS=http://host.docker.internal:5081
-     - ROUTE256_PG_CONNECTION_STRING=Server=orders-db;Port=5432;User Id=postgres;Password=secret;Database=orders_db;
      - Postgres__Db=orders_db
      - Postgres__Login=postgres
      - Postgres__Password=secret
+     - Postgres__Cluster=orders-cluster
+     - MIGRATE=false
     build:
       context: .
       dockerfile: src/Ozon.Route256.Five.OrderService/Dockerfile
@@ -24,7 +25,8 @@ services:
      - customer-service
      - logistics-simulator
      - kafka
-     - orders-db
+     - orders-db-1
+     - orders-db-2
      - redis-orders
      - jaeger
     restart: unless-stopped
@@ -68,15 +70,28 @@ services:
      - zookeeper
     restart: unless-stopped
 
-  orders-db:
+  orders-db-1:
     image: postgres:latest
     ports:
      - "5433:5432"
     environment:
+     - POSTGRES_USER=postgres
      - POSTGRES_DB=orders_db
      - POSTGRES_PASSWORD=secret
     volumes:
-     - pgdata_orders:/var/lib/postgresql/data
+     - pgdata_orders_1:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  orders-db-2:
+    image: postgres:latest
+    ports:
+     - "5434:5432"
+    environment:
+     - POSTGRES_USER=postgres
+     - POSTGRES_DB=orders_db
+     - POSTGRES_PASSWORD=secret
+    volumes:
+     - pgdata_orders_2:/var/lib/postgresql/data
     restart: unless-stopped
 
   customers-db:
@@ -180,11 +195,12 @@ services:
      - "5084:80"
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
-      - ROUTE256_DB_STATE=cluster:0-9:orders-db:5432;cluster:10-19:orders-db:5432;cluster1:0:db3:1543
+      - ROUTE256_DB_STATE=orders-cluster:0-3:orders-db-1:5432;orders-cluster:4-7:orders-db-2:5432
       - ROUTE256_UPDATE_TIMEOUT=10
     restart: unless-stopped
 
 volumes:
   pgdata_customers:
-  pgdata_orders:
+  pgdata_orders_1:
+  pgdata_orders_2:
   pgadmin4_data:

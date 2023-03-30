@@ -1,15 +1,21 @@
-﻿using FluentMigrator.Runner;
+﻿using Microsoft.Extensions.Options;
+using Ozon.Route256.Five.OrderService.Shared;
 
 namespace Ozon.Route256.Five.OrderService.Infrastructure;
 
 public static class MigrationsExtensions
 {
-    public static IHost Migrate(this IHost host)
+    public static async Task<IHost> Migrate(this IHost host)
     {
         using IServiceScope scope = host.Services.CreateScope();
-        IMigrationRunner runner = scope.ServiceProvider.GetRequiredService<IMigrationRunner>();
-        runner.ListMigrations();
-        runner.MigrateUp();
+        IServiceProvider serviceProvider = scope.ServiceProvider;
+
+        SdService.SdServiceClient sdClient = serviceProvider.GetRequiredService<SdService.SdServiceClient>();
+        IOptions<PostgresSettings> options = serviceProvider.GetRequiredService<IOptions<PostgresSettings>>();
+
+        ShardMigratorRunner migratorRunner = new(sdClient, options);
+        await migratorRunner.Migrate();
+
         return host;
     }
 }

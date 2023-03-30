@@ -24,20 +24,26 @@ public class OrderAggregationHandler: IOrderAggregationHandler
         IOrderAggregationHandler.Request request,
         CancellationToken token)
     {
-        RegionDto[] regions = await _regionRepository.GetAll(token);
+        RegionDto[] allRegions = await _regionRepository.GetAll(token);
+        IEnumerable<string> allRegionNames = allRegions.Select(r => r.Name);
 
-        if (request.Regions != null && request.Regions.Length > 0)
+        string[]? regionNames = request.Regions;
+        if (regionNames != null && regionNames.Length > 0)
         {
-            List<string> list = request.Regions.Except(regions.Select(r => r.Name)).ToList();
+            List<string> list = regionNames.Except(allRegionNames).ToList();
             if (list.Count > 0)
             {
                 return HandlerResult<AggregatedOrdersResponseBo[]>.FromError(
                     new OrdersGettingException($"Regions {string.Join(',', list)} not found"));
             }
         }
+        else
+        {
+            regionNames = allRegionNames.ToArray();
+        }
 
         AggregateOrdersDto[] result = await _orderRepository.AggregateOrders(
-            request.Regions, request.StartDate, request.EndDate, token);
+            regionNames, request.StartDate, request.EndDate, token);
 
         AggregatedOrdersResponseBo[] resultBo = result.ToAggregatedOrdersResponseBo();
         return HandlerResult<AggregatedOrdersResponseBo[]>.FromValue(resultBo);

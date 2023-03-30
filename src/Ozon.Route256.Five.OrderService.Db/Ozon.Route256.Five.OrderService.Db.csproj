@@ -27,6 +27,7 @@
     <PackageReference Include="FluentMigrator.Extensions.Postgres" Version="3.3.2" />
     <PackageReference Include="FluentMigrator.Runner" Version="3.3.2" />
     <PackageReference Include="FluentMigrator.Runner.Postgres" Version="3.3.2" />
+    <PackageReference Include="murmurhash" Version="1.0.3" />
     <PackageReference Include="Npgsql" Version="7.0.2" />
   </ItemGroup>
 

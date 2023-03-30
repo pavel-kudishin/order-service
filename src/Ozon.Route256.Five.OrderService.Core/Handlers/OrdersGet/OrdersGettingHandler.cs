@@ -26,20 +26,26 @@ public class OrdersGettingHandler : IOrdersGettingHandler
         IOrdersGettingHandler.Request request,
         CancellationToken token)
     {
-        RegionDto[] regions = await _regionRepository.GetAll(token);
+        RegionDto[] allRegions = await _regionRepository.GetAll(token);
+        IEnumerable<string> allRegionNames = allRegions.Select(r => r.Name);
 
-        if (request.RegionIds != null && request.RegionIds.Length > 0)
+        string[]? regionNames = request.RegionNames;
+        if (regionNames != null && regionNames.Length > 0)
         {
-            List<string> list = request.RegionIds.Except(regions.Select(r => r.Name)).ToList();
+            List<string> list = regionNames.Except(allRegionNames).ToList();
             if (list.Count > 0)
             {
                 return HandlerResult<OrderBo[]>.FromError(
                     new OrdersGettingException($"Regions {string.Join(',', list)} not found"));
             }
         }
+        else
+        {
+            regionNames = allRegionNames.ToArray();
+        }
 
         OrderDto[] orders = await _orderRepository.Filter(
-            request.RegionIds,
+            regionNames,
             request.Sources.ToOrderSourcesDto(),
             request.PageNumber,
             request.ItemsPerPage,

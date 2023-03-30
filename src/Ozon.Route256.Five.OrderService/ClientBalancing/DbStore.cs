@@ -4,35 +4,34 @@ namespace Ozon.Route256.Five.OrderService.ClientBalancing;
 
 internal sealed class DbStore : IDbStore
 {
-    private DbEndpoint[] _endpoints = Array.Empty<DbEndpoint>();
+    private Dictionary<int, DbEndpoint> _bucketsDictionary = new(0);
 
-    private int _currentIndex = -1;
+    public int BucketsCount => _bucketsDictionary.Count;
 
-    public Task UpdateEndpointsAsync(IReadOnlyCollection<DbEndpoint> dbEndpoints)
+    public void UpdateEndpoints(IReadOnlyCollection<DbEndpoint> dbEndpoints)
     {
-        DbEndpoint[]? endpoints = new DbEndpoint[dbEndpoints.Count];
+        Dictionary<int, DbEndpoint> bucketsDictionary = new();
 
-        int i = 0;
-
-        foreach (DbEndpoint? endpoint in dbEndpoints)
+        foreach (DbEndpoint endpoint in dbEndpoints)
         {
-            endpoints[i++] = endpoint;
+            foreach (int bucket in endpoint.Buckets)
+            {
+                bucketsDictionary.Add(bucket, endpoint);
+            }
         }
 
-        _endpoints = endpoints;
-
-        return Task.CompletedTask;
+        _bucketsDictionary = bucketsDictionary;
     }
 
-    public Task<DbEndpoint> GetNextEndpointAsync()
+    public DbEndpoint GetEndpoint(int bucketId)
     {
-        DbEndpoint[]? endpoints = _endpoints;
+        Dictionary<int, DbEndpoint> bucketsDictionary = _bucketsDictionary;
 
-        int nextIndex = Interlocked.Increment(ref _currentIndex);
+        if (bucketsDictionary.TryGetValue(bucketId, out DbEndpoint? endpoint))
+        {
+            return endpoint;
+        }
 
-        nextIndex %= endpoints.Length;
-        nextIndex = nextIndex >= 0 ? nextIndex : endpoints.Length + nextIndex;
-
-        return Task.FromResult(endpoints[nextIndex]);
+        throw new ArgumentOutOfRangeException($"There is no endpoint for bucket {bucketId}");
     }
 }
