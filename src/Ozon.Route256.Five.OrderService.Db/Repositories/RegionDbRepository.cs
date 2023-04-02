@@ -1,12 +1,15 @@
 ﻿using Dapper;
-using Ozon.Route256.Five.OrderService.Core.Repository;
-using Ozon.Route256.Five.OrderService.Core.Repository.Dto;
-using Ozon.Route256.Five.OrderService.Shared.ClientBalancing;
 using System.Data.Common;
+using Ozon.Route256.Five.OrderService.Core.ClientBalancing;
+using Ozon.Route256.Five.OrderService.Domain.BusinessObjects;
+using Ozon.Route256.Five.OrderService.Domain.Repository;
+using Ozon.Route256.Five.OrderService.Db.Dto;
+using Ozon.Route256.Five.OrderService.Db.Extensions;
+using Ozon.Route256.Five.OrderService.Db.Repositories.Harness;
 
 namespace Ozon.Route256.Five.OrderService.Db.Repositories;
 
-public sealed class RegionDbRepository : IRegionRepository
+internal sealed class RegionDbRepository : IRegionRepository
 {
     private readonly IConnectionFactory _connectionFactory;
     private readonly IShardingRule<string> _stringShardingRule;
@@ -22,7 +25,7 @@ public sealed class RegionDbRepository : IRegionRepository
         _dbStore = dbStore;
     }
 
-    public async Task<RegionDto?> Find(string name, CancellationToken token)
+    public async Task<RegionBo?> Find(string name, CancellationToken token)
     {
         await using DbConnection connection = _connectionFactory.GetConnectionByKey(name);
 
@@ -45,10 +48,11 @@ public sealed class RegionDbRepository : IRegionRepository
 
         RegionDto? region = regions.FirstOrDefault();
 
-        return region;
+        RegionBo? regionBo = region?.ToRegionBo();
+        return regionBo;
     }
 
-    public async Task<RegionDto[]> GetAll(CancellationToken token)
+    public async Task<RegionBo[]> GetAll(CancellationToken token)
     {
         const string SQL = @"
         SELECT
@@ -73,10 +77,11 @@ public sealed class RegionDbRepository : IRegionRepository
             result.AddRange(query);
         }
 
-        return result.ToArray();
+        RegionBo[] regionsBo = result.ToRegionsBo();
+        return regionsBo;
     }
 
-    public async Task<RegionDto[]> FindMany(IEnumerable<string> names, CancellationToken token)
+    public async Task<RegionBo[]> FindMany(IEnumerable<string> names, CancellationToken token)
     {
         Dictionary<int, string[]> bucketToRegionNamesMap =
             names
@@ -114,6 +119,7 @@ public sealed class RegionDbRepository : IRegionRepository
             result.AddRange(query);
         }
 
-        return result.ToArray();
+        RegionBo[] regionsBo = result.ToRegionsBo();
+        return regionsBo;
     }
 }

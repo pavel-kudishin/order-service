@@ -1,9 +1,9 @@
 ﻿using FluentAssertions;
 using Moq;
-using Ozon.Route256.Five.OrderService.Core.BusinessObjects;
+using Ozon.Route256.Five.OrderService.Core.Handlers;
 using Ozon.Route256.Five.OrderService.Core.Handlers.CustomersGet;
-using Ozon.Route256.Five.OrderService.Core.Handlers.ResultTypes;
-using Ozon.Route256.Five.OrderService.Core.Repository;
+using Ozon.Route256.Five.OrderService.Domain.BusinessObjects;
+using Ozon.Route256.Five.OrderService.Domain.Repository;
 
 namespace Ozon.Route256.Five.OrderService.Tests.Handlers;
 

@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "Ozon.Route256.Five.OrderService.ConsoleDbMigrator": {
+      "commandName": "Project",
+        "environmentVariables": {
+        }
+    }
+  }
+}

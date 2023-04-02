@@ -1,9 +1,9 @@
 ﻿using FluentAssertions;
 using Moq;
-using Ozon.Route256.Five.OrderService.Core.BusinessObjects;
+using Ozon.Route256.Five.OrderService.Core.Handlers;
 using Ozon.Route256.Five.OrderService.Core.Handlers.AggregateOrders;
-using Ozon.Route256.Five.OrderService.Core.Handlers.ResultTypes;
-using Ozon.Route256.Five.OrderService.Core.Repository;
+using Ozon.Route256.Five.OrderService.Domain.BusinessObjects;
+using Ozon.Route256.Five.OrderService.Domain.Repository;
 
 namespace Ozon.Route256.Five.OrderService.Tests.Handlers;
 
@@ -31,7 +31,7 @@ public class OrderAggregationHandlerTests
             new(orderRepository.Object, regionRepository.Object);
 
         IOrderAggregationHandler.Request request = new(null, startDate, endDate);
-        HandlerResult<AggregatedOrdersResponseBo[]> result = await handler.Handle(request, CancellationToken.None);
+        HandlerResult<AggregatedOrdersBo[]> result = await handler.Handle(request, CancellationToken.None);
 
         result.Success.Should().BeTrue();
         Assert.NotNull(result.Value);

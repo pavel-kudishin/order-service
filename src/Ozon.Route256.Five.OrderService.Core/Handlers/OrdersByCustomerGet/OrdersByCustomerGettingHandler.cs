@@ -1,12 +1,9 @@
-using Ozon.Route256.Five.OrderService.Core.BusinessObjects;
-using Ozon.Route256.Five.OrderService.Core.Handlers.ResultTypes;
-using Ozon.Route256.Five.OrderService.Core.Repository;
-using Ozon.Route256.Five.OrderService.Core.Repository.Dto;
-using Ozon.Route256.Five.OrderService.Core.Repository.Extensions;
+using Ozon.Route256.Five.OrderService.Domain.BusinessObjects;
+using Ozon.Route256.Five.OrderService.Domain.Repository;
 
 namespace Ozon.Route256.Five.OrderService.Core.Handlers.OrdersByCustomerGet;
 
-public class OrdersByCustomerGettingHandler : IOrdersByCustomerGettingHandler
+internal sealed class OrdersByCustomerGettingHandler : IOrdersByCustomerGettingHandler
 {
     private readonly ICustomerRepository _customerRepository;
     private readonly IOrderRepository _orderRepository;
@@ -23,7 +20,7 @@ public class OrdersByCustomerGettingHandler : IOrdersByCustomerGettingHandler
         IOrdersByCustomerGettingHandler.Request request,
         CancellationToken token)
     {
-        CustomerDto? customer = await _customerRepository.Find(request.CustomerId, token);
+        CustomerBo? customer = await _customerRepository.Find(request.CustomerId, token);
 
         if (customer is null)
         {
@@ -31,11 +28,9 @@ public class OrdersByCustomerGettingHandler : IOrdersByCustomerGettingHandler
                 new CustomerNotFoundException($"Customer #{request.CustomerId} not found"));
         }
 
-        OrderDto[] orders = await _orderRepository.FindByCustomer(
+        OrderBo[] orders = await _orderRepository.FindByCustomer(
             request.CustomerId, request.StartDate, request.EndDate, request.PageNumber, request.ItemsPerPage, token);
 
-        OrderBo[] ordersBo = orders.ToOrdersBo().ToArray();
-
-        return HandlerResult<OrderBo[]>.FromValue(ordersBo);
+        return HandlerResult<OrderBo[]>.FromValue(orders);
     }
 }

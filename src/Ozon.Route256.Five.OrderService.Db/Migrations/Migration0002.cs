@@ -1,6 +1,7 @@
 ﻿using FluentMigrator;
 using Microsoft.Extensions.Options;
-using Ozon.Route256.Five.OrderService.Db.Repositories;
+using Ozon.Route256.Five.OrderService.Db.Migrations.Settings;
+using Ozon.Route256.Five.OrderService.Db.Repositories.Harness;
 
 namespace Ozon.Route256.Five.OrderService.Db.Migrations;
 
