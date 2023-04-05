@@ -2,19 +2,26 @@ stages:
   - Build
   - Tests
 
-build:
+build host:
   stage: Build
   image: mcr.microsoft.com/dotnet/sdk:6.0
   needs: []
   script:
-  - dotnet restore src/Ozon.Route256.Five.OrderService/Ozon.Route256.Five.OrderService.csproj
-  - dotnet build src/Ozon.Route256.Five.OrderService/Ozon.Route256.Five.OrderService.csproj --no-restore
+  - dotnet restore src/Ozon.Route256.Five.OrderService.Host/Ozon.Route256.Five.OrderService.Host.csproj
+  - dotnet build src/Ozon.Route256.Five.OrderService.Host/Ozon.Route256.Five.OrderService.Host.csproj --no-restore
 
 test:
   stage: Tests
   image: mcr.microsoft.com/dotnet/sdk:6.0
-  needs: ["build"]
+  needs: ["build host"]
   script:
     - dotnet restore tests/Ozon.Route256.Five.OrderService.Tests/Ozon.Route256.Five.OrderService.Tests.csproj
     - dotnet test tests/Ozon.Route256.Five.OrderService.Tests/Ozon.Route256.Five.OrderService.Tests.csproj --no-restore
 
+build console:
+  stage: Build
+  image: mcr.microsoft.com/dotnet/sdk:6.0
+  needs: []
+  script:
+  - dotnet restore src/Ozon.Route256.Five.OrderService.ConsoleDbMigrator/Ozon.Route256.Five.OrderService.ConsoleDbMigrator.csproj
+  - dotnet build src/Ozon.Route256.Five.OrderService.ConsoleDbMigrator/Ozon.Route256.Five.OrderService.ConsoleDbMigrator.csproj --no-restore
