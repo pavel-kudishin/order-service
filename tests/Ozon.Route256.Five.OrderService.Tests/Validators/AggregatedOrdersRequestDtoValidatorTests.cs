@@ -1,7 +1,7 @@
 using FluentAssertions;
 using FluentValidation.Results;
 using Ozon.Route256.Five.OrderService.Rest.Dto;
-using Ozon.Route256.Five.OrderService.Validators;
+using Ozon.Route256.Five.OrderService.Rest.Validators;
 
 namespace Ozon.Route256.Five.OrderService.Tests.Validators;
 

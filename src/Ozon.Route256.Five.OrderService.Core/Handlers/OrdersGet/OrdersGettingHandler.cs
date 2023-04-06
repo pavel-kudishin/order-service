@@ -1,12 +1,9 @@
-using Ozon.Route256.Five.OrderService.Core.BusinessObjects;
-using Ozon.Route256.Five.OrderService.Core.Handlers.ResultTypes;
-using Ozon.Route256.Five.OrderService.Core.Repository;
-using Ozon.Route256.Five.OrderService.Core.Repository.Dto;
-using Ozon.Route256.Five.OrderService.Core.Repository.Extensions;
+using Ozon.Route256.Five.OrderService.Domain.BusinessObjects;
+using Ozon.Route256.Five.OrderService.Domain.Repository;
 
 namespace Ozon.Route256.Five.OrderService.Core.Handlers.OrdersGet;
 
-public class OrdersGettingHandler : IOrdersGettingHandler
+internal sealed class OrdersGettingHandler : IOrdersGettingHandler
 {
     private readonly IOrderRepository _orderRepository;
     private readonly IRegionRepository _regionRepository;
@@ -26,7 +23,7 @@ public class OrdersGettingHandler : IOrdersGettingHandler
         IOrdersGettingHandler.Request request,
         CancellationToken token)
     {
-        RegionDto[] allRegions = await _regionRepository.GetAll(token);
+        RegionBo[] allRegions = await _regionRepository.GetAll(token);
         IEnumerable<string> allRegionNames = allRegions.Select(r => r.Name);
 
         string[]? regionNames = request.RegionNames;
@@ -44,19 +41,14 @@ public class OrdersGettingHandler : IOrdersGettingHandler
             regionNames = allRegionNames.ToArray();
         }
 
-        OrderDto[] orders = await _orderRepository.Filter(
+        OrderBo[] orders = await _orderRepository.Filter(
             regionNames,
-            request.Sources.ToOrderSourcesDto(),
+            request.Sources,
             request.PageNumber,
             request.ItemsPerPage,
-            request.Direction.ToOrderingDirectionDto(),
+            request.Direction,
             token);
 
-        int[] customerIds = orders.Select(o => o.CustomerId).Distinct().ToArray();
-        CustomerDto[] customerDtos = await _customerRepository.FindMany(customerIds, token);
-
-        OrderBo[] ordersBo = orders.ToOrdersBo(customerDtos);
-
-        return HandlerResult<OrderBo[]>.FromValue(ordersBo);
+        return HandlerResult<OrderBo[]>.FromValue(orders);
     }
 }

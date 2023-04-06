@@ -1,6 +1,5 @@
 using FluentAssertions;
-using Ozon.Route256.Five.OrderService.ClientBalancing;
-using Ozon.Route256.Five.OrderService.Shared.ClientBalancing;
+using Ozon.Route256.Five.OrderService.Core.ClientBalancing;
 
 namespace Ozon.Route256.Five.OrderService.Tests;
 

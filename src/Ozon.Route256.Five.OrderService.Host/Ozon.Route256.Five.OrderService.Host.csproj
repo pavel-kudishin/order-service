@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>0bffb5cd-8906-4176-ba98-99198ecf717a</UserSecretsId>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+    <DockerfileContext>..\..</DockerfileContext>
+    <DockerComposeProjectPath>..\..\docker-compose.dcproj</DockerComposeProjectPath>
+    <GenerateDocumentationFile>False</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation.AspNetCore" Version="11.2.2" />
+    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.17.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+    <_Parameter1>Ozon.Route256.Five.OrderService.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ozon.Route256.Five.OrderService.Core\Ozon.Route256.Five.OrderService.Core.csproj" />
+    <ProjectReference Include="..\Ozon.Route256.Five.OrderService.Db\Ozon.Route256.Five.OrderService.Db.csproj" />
+    <ProjectReference Include="..\Ozon.Route256.Five.OrderService.Grpc\Ozon.Route256.Five.OrderService.Grpc.csproj" />
+    <ProjectReference Include="..\Ozon.Route256.Five.OrderService.Kafka\Ozon.Route256.Five.OrderService.Kafka.csproj" />
+    <ProjectReference Include="..\Ozon.Route256.Five.OrderService.Redis\Ozon.Route256.Five.OrderService.Redis.csproj" />
+    <ProjectReference Include="..\Ozon.Route256.Five.OrderService.Rest\Ozon.Route256.Five.OrderService.Rest.csproj" />
+  </ItemGroup>
+</Project>

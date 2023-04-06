@@ -1,10 +1,9 @@
 ﻿using FluentAssertions;
 using Moq;
-using Ozon.Route256.Five.OrderService.Core.BusinessObjects;
+using Ozon.Route256.Five.OrderService.Core.Handlers;
 using Ozon.Route256.Five.OrderService.Core.Handlers.OrderGet;
-using Ozon.Route256.Five.OrderService.Core.Handlers.ResultTypes;
-using Ozon.Route256.Five.OrderService.Core.Repository;
-using Ozon.Route256.Five.OrderService.Core.Repository.Dto;
+using Ozon.Route256.Five.OrderService.Domain.BusinessObjects;
+using Ozon.Route256.Five.OrderService.Domain.Repository;
 
 namespace Ozon.Route256.Five.OrderService.Tests.Handlers;
 
@@ -15,7 +14,7 @@ public class OrderGettingHandlerTests
     {
         Mock<IOrderRepository> orderRepository = new();
         orderRepository.Setup(repo => repo.Find(1, CancellationToken.None))
-            .Returns(Task.FromResult<OrderDto?>(null));
+            .Returns(Task.FromResult<OrderBo?>(null));
 
         Mock<ICustomerRepository> customerRepository = new();
 
@@ -32,11 +31,11 @@ public class OrderGettingHandlerTests
     {
         Mock<IOrderRepository> orderRepository = new();
         orderRepository.Setup(repo => repo.Find(TestData.ORDER_ID, CancellationToken.None))
-            .Returns(Task.FromResult((OrderDto?)TestData.GetTestOrder()));
+            .Returns(Task.FromResult((OrderBo?)TestData.GetTestOrder()));
 
         Mock<ICustomerRepository> customerRepository = new();
         customerRepository.Setup(repo => repo.Find(TestData.CUSTOMER_ID, CancellationToken.None))
-            .Returns(Task.FromResult((CustomerDto?)TestData.GetTestCustomer()));
+            .Returns(Task.FromResult((CustomerBo?)TestData.GetTestCustomer()));
 
         OrderGettingHandler handler =
             new(orderRepository.Object, customerRepository.Object);

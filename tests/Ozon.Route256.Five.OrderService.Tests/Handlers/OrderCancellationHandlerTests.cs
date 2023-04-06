@@ -1,10 +1,10 @@
 ﻿using FluentAssertions;
 using Moq;
-using Ozon.Route256.Five.OrderService.Core;
+using Ozon.Route256.Five.OrderService.Core.Abstractions;
+using Ozon.Route256.Five.OrderService.Core.Handlers;
 using Ozon.Route256.Five.OrderService.Core.Handlers.OrderCancel;
-using Ozon.Route256.Five.OrderService.Core.Handlers.ResultTypes;
-using Ozon.Route256.Five.OrderService.Core.Repository;
-using Ozon.Route256.Five.OrderService.Core.Repository.Dto;
+using Ozon.Route256.Five.OrderService.Domain.BusinessObjects;
+using Ozon.Route256.Five.OrderService.Domain.Repository;
 
 namespace Ozon.Route256.Five.OrderService.Tests.Handlers;
 
@@ -15,7 +15,7 @@ public class OrderCancellationHandlerTests
     {
         Mock<IOrderRepository> orderRepository = new();
         orderRepository.Setup(repo => repo.Find(TestData.ORDER_ID, CancellationToken.None))
-            .Returns(Task.FromResult((OrderDto?)TestData.GetTestOrder()));
+            .Returns(Task.FromResult((OrderBo?)TestData.GetTestOrder()));
 
         Mock<ILogisticService> client = new();
         client.Setup(repo => repo.OrderCancelAsync(TestData.ORDER_ID, CancellationToken.None))

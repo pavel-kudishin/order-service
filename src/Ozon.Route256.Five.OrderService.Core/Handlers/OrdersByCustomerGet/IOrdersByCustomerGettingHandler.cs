@@ -1,4 +1,4 @@
-﻿using Ozon.Route256.Five.OrderService.Core.BusinessObjects;
+﻿using Ozon.Route256.Five.OrderService.Domain.BusinessObjects;
 
 namespace Ozon.Route256.Five.OrderService.Core.Handlers.OrdersByCustomerGet;
 

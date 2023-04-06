@@ -14,10 +14,9 @@ services:
      - Postgres__Login=postgres
      - Postgres__Password=secret
      - Postgres__Cluster=orders-cluster
-     - MIGRATE=false
     build:
       context: .
-      dockerfile: src/Ozon.Route256.Five.OrderService/Dockerfile
+      dockerfile: src/Ozon.Route256.Five.OrderService.Host/Dockerfile
     deploy:
       replicas: 2
     depends_on:
@@ -195,7 +194,7 @@ services:
      - "5084:80"
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
-      - ROUTE256_DB_STATE=orders-cluster:0-3:orders-db-1:5432;orders-cluster:4-7:orders-db-2:5432
+      - ROUTE256_DB_STATE=orders-cluster:0-3:host.docker.internal:5433;orders-cluster:4-7:host.docker.internal:5434
       - ROUTE256_UPDATE_TIMEOUT=10
     restart: unless-stopped
 

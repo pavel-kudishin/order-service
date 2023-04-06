@@ -1,11 +1,11 @@
-using Ozon.Route256.Five.OrderService.Core.BusinessObjects;
-using Ozon.Route256.Five.OrderService.Core.Handlers.ResultTypes;
-using Ozon.Route256.Five.OrderService.Core.Repository;
-using Ozon.Route256.Five.OrderService.Core.Repository.Dto;
+using Ozon.Route256.Five.OrderService.Core.Abstractions;
+using Ozon.Route256.Five.OrderService.Core.Exceptions;
+using Ozon.Route256.Five.OrderService.Domain.BusinessObjects;
+using Ozon.Route256.Five.OrderService.Domain.Repository;
 
 namespace Ozon.Route256.Five.OrderService.Core.Handlers.OrderCancel;
 
-public class OrderCancellationHandler : IOrderCancellationHandler
+internal sealed class OrderCancellationHandler : IOrderCancellationHandler
 {
     private readonly IOrderRepository _orderRepository;
     private readonly ILogisticService _client;
@@ -20,7 +20,7 @@ public class OrderCancellationHandler : IOrderCancellationHandler
 
     public async Task<HandlerResult> Handle(IOrderCancellationHandler.Request request, CancellationToken token)
     {
-        OrderDto? order = await _orderRepository.Find(request.OrderId, token);
+        OrderBo? order = await _orderRepository.Find(request.OrderId, token);
 
         if (order is null)
         {
@@ -34,7 +34,7 @@ public class OrderCancellationHandler : IOrderCancellationHandler
             return HandlerResult.FromError(new OrderCancellationException(result.Error.BusinessError));
         }
 
-        order.State = OrderStateDto.Cancelled;
+        order.Cancel();
 
         await _orderRepository.Update(order, token);
 

@@ -1,13 +1,10 @@
-using Ozon.Route256.Five.OrderService.Core.BusinessObjects;
 using Ozon.Route256.Five.OrderService.Core.Handlers.OrdersGet;
-using Ozon.Route256.Five.OrderService.Core.Handlers.ResultTypes;
-using Ozon.Route256.Five.OrderService.Core.Repository;
-using Ozon.Route256.Five.OrderService.Core.Repository.Dto;
-using Ozon.Route256.Five.OrderService.Core.Repository.Extensions;
+using Ozon.Route256.Five.OrderService.Domain.BusinessObjects;
+using Ozon.Route256.Five.OrderService.Domain.Repository;
 
 namespace Ozon.Route256.Five.OrderService.Core.Handlers.AggregateOrders;
 
-public class OrderAggregationHandler: IOrderAggregationHandler
+internal sealed class OrderAggregationHandler: IOrderAggregationHandler
 {
     private readonly IOrderRepository _orderRepository;
     private readonly IRegionRepository _regionRepository;
@@ -20,11 +17,11 @@ public class OrderAggregationHandler: IOrderAggregationHandler
         _regionRepository = regionRepository;
     }
 
-    public async Task<HandlerResult<AggregatedOrdersResponseBo[]>> Handle(
+    public async Task<HandlerResult<AggregatedOrdersBo[]>> Handle(
         IOrderAggregationHandler.Request request,
         CancellationToken token)
     {
-        RegionDto[] allRegions = await _regionRepository.GetAll(token);
+        RegionBo[] allRegions = await _regionRepository.GetAll(token);
         IEnumerable<string> allRegionNames = allRegions.Select(r => r.Name);
 
         string[]? regionNames = request.Regions;
@@ -33,7 +30,7 @@ public class OrderAggregationHandler: IOrderAggregationHandler
             List<string> list = regionNames.Except(allRegionNames).ToList();
             if (list.Count > 0)
             {
-                return HandlerResult<AggregatedOrdersResponseBo[]>.FromError(
+                return HandlerResult<AggregatedOrdersBo[]>.FromError(
                     new OrdersGettingException($"Regions {string.Join(',', list)} not found"));
             }
         }
@@ -42,10 +39,9 @@ public class OrderAggregationHandler: IOrderAggregationHandler
             regionNames = allRegionNames.ToArray();
         }
 
-        AggregateOrdersDto[] result = await _orderRepository.AggregateOrders(
+        AggregatedOrdersBo[] result = await _orderRepository.AggregateOrders(
             regionNames, request.StartDate, request.EndDate, token);
 
-        AggregatedOrdersResponseBo[] resultBo = result.ToAggregatedOrdersResponseBo();
-        return HandlerResult<AggregatedOrdersResponseBo[]>.FromValue(resultBo);
+        return HandlerResult<AggregatedOrdersBo[]>.FromValue(result);
     }
 }

@@ -1,31 +1,38 @@
 ﻿using System.Data.Common;
 using Dapper;
-using Ozon.Route256.Five.OrderService.Core.Repository;
-using Ozon.Route256.Five.OrderService.Core.Repository.Dto;
-using Ozon.Route256.Five.OrderService.Shared.ClientBalancing;
+using Ozon.Route256.Five.OrderService.Core.ClientBalancing;
+using Ozon.Route256.Five.OrderService.Core.Exceptions;
+using Ozon.Route256.Five.OrderService.Db.Dto;
+using Ozon.Route256.Five.OrderService.Db.Extensions;
+using Ozon.Route256.Five.OrderService.Db.Repositories.Harness;
+using Ozon.Route256.Five.OrderService.Domain.BusinessObjects;
+using Ozon.Route256.Five.OrderService.Domain.Repository;
 
 namespace Ozon.Route256.Five.OrderService.Db.Repositories;
 
-public sealed class OrderDbRepository : IOrderRepository
+internal sealed class OrderDbRepository : IOrderRepository
 {
     private readonly IConnectionFactory _connectionFactory;
     private readonly IShardingRule<long> _longShardingRule;
     private readonly IShardingRule<string> _stringShardingRule;
     private readonly IDbStore _dbStore;
+    private readonly ICustomerRepository _customerRepository;
 
     public OrderDbRepository(
         IConnectionFactory connectionFactory,
         IShardingRule<long> longShardingRule,
         IShardingRule<string> stringShardingRule,
-        IDbStore dbStore)
+        IDbStore dbStore,
+        ICustomerRepository customerRepository)
     {
         _connectionFactory = connectionFactory;
         _longShardingRule = longShardingRule;
         _stringShardingRule = stringShardingRule;
         _dbStore = dbStore;
+        _customerRepository = customerRepository;
     }
 
-    public async Task<OrderDto?> Find(long orderId, CancellationToken token)
+    public async Task<OrderBo?> Find(long orderId, CancellationToken token)
     {
         await using DbConnection connection = _connectionFactory.GetConnectionByKey(orderId);
 
@@ -65,10 +72,22 @@ public sealed class OrderDbRepository : IOrderRepository
 
         OrderDto? order = orders.FirstOrDefault();
 
-        return order;
+        if (order == null)
+        {
+            return null;
+        }
+
+        CustomerBo? customer = await _customerRepository.Find(order.CustomerId, token);
+
+        if (customer == null)
+        {
+            throw new RepositoryException($"Customer #{order.CustomerId} not found");
+        }
+
+        return order?.ToOrderBo(customer);
     }
 
-    public async Task Insert(OrderDto order, CancellationToken token)
+    public async Task Insert(OrderBo order, CancellationToken token)
     {
         await using DbConnection connection = _connectionFactory.GetConnectionByKey(order.Id);
 
@@ -103,7 +122,7 @@ public sealed class OrderDbRepository : IOrderRepository
             order.DateCreated,
             order.State,
             order.Phone,
-            order.CustomerId,
+            CustomerId = order.Customer.Id,
             order.Address?.City,
             order.Address?.Street,
             order.Address?.Building,
@@ -119,7 +138,7 @@ public sealed class OrderDbRepository : IOrderRepository
         await InsertIndexOnRegionName(order);
     }
 
-    private async Task InsertIndexOnRegionName(OrderDto order)
+    private async Task InsertIndexOnRegionName(OrderBo order)
     {
         const string SQL = @"
         INSERT INTO
@@ -148,7 +167,7 @@ public sealed class OrderDbRepository : IOrderRepository
         await connection.ExecuteAsync(SQL, param);
     }
 
-    private async Task InsertIndexOnCustomerId(OrderDto order)
+    private async Task InsertIndexOnCustomerId(OrderBo order)
     {
         const string SQL = @"
         INSERT INTO
@@ -167,14 +186,14 @@ public sealed class OrderDbRepository : IOrderRepository
 
         DynamicParameters param = new();
         param.Add("@order_id", order.Id);
-        param.Add("@customer_id", order.CustomerId);
+        param.Add("@customer_id", order.Customer.Id);
         param.Add("@date_created", order.DateCreated);
 
-        await using DbConnection connection = _connectionFactory.GetConnectionByKey(order.CustomerId);
+        await using DbConnection connection = _connectionFactory.GetConnectionByKey(order.Customer.Id);
         await connection.ExecuteAsync(SQL, param);
     }
 
-    public async Task Update(OrderDto order, CancellationToken token)
+    public async Task Update(OrderBo order, CancellationToken token)
     {
         await using DbConnection connection = _connectionFactory.GetConnectionByKey(order.Id);
 
@@ -210,7 +229,7 @@ public sealed class OrderDbRepository : IOrderRepository
             order.DateCreated,
             order.State,
             order.Phone,
-            order.CustomerId,
+            CustomerId = order.Customer.Id,
             order.Address?.City,
             order.Address?.Street,
             order.Address?.Building,
@@ -223,16 +242,15 @@ public sealed class OrderDbRepository : IOrderRepository
         int count = await connection.ExecuteAsync(SQL, queryArguments);
     }
 
-    public async Task<OrderDto[]> FindByCustomer(
-        int customerId, DateTime? startDate, DateTime? endDate,
+    public async Task<OrderBo[]> FindByCustomer(int customerId, DateTime? startDate, DateTime? endDate,
         int pageNumber, int itemsPerPage, CancellationToken token)
     {
         IEnumerable<long> orderIds = await GetOrderIdsFromIndex(customerId, startDate, endDate, pageNumber, itemsPerPage);
-        OrderDto[] orders = await GetOrdersByIds(orderIds);
+        OrderBo[] orders = await GetOrdersByIds(orderIds, token);
         return orders.OrderBy(o => o.Id).ToArray();
     }
 
-    private async Task<OrderDto[]> GetOrdersByIds(IEnumerable<long> orderIds)
+    private async Task<OrderBo[]> GetOrdersByIds(IEnumerable<long> orderIds, CancellationToken token)
     {
         SqlBuilder builder = new();
         builder.Select("id AS Id");
@@ -285,7 +303,10 @@ public sealed class OrderDbRepository : IOrderRepository
             }
         }
 
-        return result.ToArray();
+        int[] customerIds = result.Select(o => o.CustomerId).Distinct().ToArray();
+        CustomerBo[] customers = await _customerRepository.FindMany(customerIds, token);
+
+        return result.ToOrdersBo(customers);
     }
 
     private Dictionary<int, long[]>? GetBucketToOrderIdsMap(IEnumerable<long> orderIds)
@@ -336,33 +357,33 @@ public sealed class OrderDbRepository : IOrderRepository
         return orderIds;
     }
 
-    public async Task<OrderDto[]> Filter(
-        string[]? regions,
-        OrderSourceDto[]? sources,
+    public async Task<OrderBo[]> Filter(string[]? regions,
+        OrderSourceBo[]? sources,
         int pageNumber,
         int itemsPerPage,
-        OrderingDirectionDto orderingDirection,
+        OrderingDirectionBo orderingDirection,
         CancellationToken token)
     {
         if (regions == null || regions.Length == 0)
         {
-            return Array.Empty<OrderDto>();
+            return Array.Empty<OrderBo>();
         }
 
         long[] orderIds = await GetOrderIdsFromIndex(regions, sources, pageNumber, itemsPerPage, orderingDirection);
-        OrderDto[] orders = await GetOrdersByIds(orderIds);
+        OrderBo[] orders = await GetOrdersByIds(orderIds, token);
+
         return orders.OrderBy(o => o.Address?.Region).ToArray();
     }
 
     private async Task<long[]> GetOrderIdsFromIndex(
         string[] regions,
-        OrderSourceDto[]? sources,
+        OrderSourceBo[]? sources,
         int pageNumber,
         int itemsPerPage,
-        OrderingDirectionDto orderingDirection)
+        OrderingDirectionBo orderingDirection)
     {
         IOrderedEnumerable<string> orderedRegions =
-            orderingDirection == OrderingDirectionDto.Asc
+            orderingDirection == OrderingDirectionBo.Asc
                 ? regions.OrderBy(r => r)
                 : regions.OrderByDescending(r => r);
 
@@ -422,15 +443,14 @@ public sealed class OrderDbRepository : IOrderRepository
         return orderIds.ToArray();
     }
 
-    public async Task<AggregateOrdersDto[]> AggregateOrders(
-        string[]? regions,
+    public async Task<AggregatedOrdersBo[]> AggregateOrders(string[]? regions,
         DateTime startDate,
         DateTime? endDate,
         CancellationToken token)
     {
         if (regions == null || regions.Length == 0)
         {
-            return Array.Empty<AggregateOrdersDto>();
+            return Array.Empty<AggregatedOrdersBo>();
         }
 
         const string SQL = @"
@@ -482,7 +502,7 @@ public sealed class OrderDbRepository : IOrderRepository
             })
             .ToArray();
 
-        return aggregateOrders;
+        return aggregateOrders.ToAggregatedOrdersBo();
     }
 
     private async Task<long[]> GetOrderIdsFromIndex(
