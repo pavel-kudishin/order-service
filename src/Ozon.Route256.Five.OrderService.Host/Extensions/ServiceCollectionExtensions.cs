@@ -1,6 +1,11 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 using Confluent.Kafka;
+using Npgsql;
+using OpenTelemetry;
+using OpenTelemetry.Exporter;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using Ozon.Route256.Five.OrderService.Core.Exceptions;
 using Ozon.Route256.Five.OrderService.Core.Extensions;
 using Ozon.Route256.Five.OrderService.Core.Handlers;
@@ -8,12 +13,11 @@ using Ozon.Route256.Five.OrderService.Core.Handlers.OrderEvents;
 using Ozon.Route256.Five.OrderService.Core.Handlers.OrderEvents.Dto;
 using Ozon.Route256.Five.OrderService.Core.Handlers.PreOrders;
 using Ozon.Route256.Five.OrderService.Core.Handlers.PreOrders.Dto;
+using Ozon.Route256.Five.OrderService.Core.Logging;
 using Ozon.Route256.Five.OrderService.Db.Extensions;
 using Ozon.Route256.Five.OrderService.Grpc.Extensions;
 using Ozon.Route256.Five.OrderService.Host.BackgroundServices;
 using Ozon.Route256.Five.OrderService.Kafka.Extensions;
-using Ozon.Route256.Five.OrderService.Kafka.Producers;
-using Ozon.Route256.Five.OrderService.Kafka.Producers.NewOrders;
 using Ozon.Route256.Five.OrderService.Kafka.Settings;
 using Ozon.Route256.Five.OrderService.Redis.Extensions;
 using Ozon.Route256.Five.OrderService.Rest.Extensions;
@@ -25,6 +29,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         services
+            .AddTelemetry()
             .AddRest()
             .SetupGrpc(configuration)
             .AddHandlers()
@@ -34,6 +39,32 @@ public static class ServiceCollectionExtensions
             .AddSwaggerGen()
             .AddDb(configuration)
             .AddDbStore();
+
+        return services;
+    }
+
+    public static IServiceCollection AddTelemetry(this IServiceCollection services)
+    {
+        services.AddOpenTelemetry()
+            .WithTracing(
+                builder =>
+                {
+                    ResourceBuilder resourceBuilder = ResourceBuilder.CreateDefault().AddService("OrderService");
+                    builder
+                        .SetResourceBuilder(resourceBuilder)
+                        .AddSource(OrderActivitySourceConfig.SOURCE_NAME)
+                        .AddAspNetCoreInstrumentation()
+                        .AddNpgsql()
+                        .AddConsoleExporter()
+                        .AddJaegerExporter(
+                            options =>
+                            {
+                                options.AgentHost = "host.docker.internal";
+                                options.AgentPort = 6831;
+                                options.Protocol = JaegerExportProtocol.UdpCompactThrift;
+                                options.ExportProcessorType = ExportProcessorType.Simple;
+                            });
+                });
 
         return services;
     }

@@ -43,6 +43,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "4 Domain", "4 Domain", "{97
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "1 Facade", "1 Facade", "{2B41EFF5-AFCF-4BFF-94C9-D36D6A99947C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ozon.Route256.Five.OrderService.IntegrationTests", "tests\Ozon.Route256.Five.OrderService.IntegrationTests\Ozon.Route256.Five.OrderService.IntegrationTests.csproj", "{A1898240-9459-4200-8771-11AD384AD85B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -93,6 +95,10 @@ Global
 		{EAB61BEF-46DB-4CBD-8BE5-8410D4780C72}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EAB61BEF-46DB-4CBD-8BE5-8410D4780C72}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EAB61BEF-46DB-4CBD-8BE5-8410D4780C72}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A1898240-9459-4200-8771-11AD384AD85B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A1898240-9459-4200-8771-11AD384AD85B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A1898240-9459-4200-8771-11AD384AD85B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A1898240-9459-4200-8771-11AD384AD85B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -112,6 +118,7 @@ Global
 		{10271ED2-02F5-4952-961C-BE294D11487F} = {8BA313EC-60DD-433A-A10B-7C08D02315B6}
 		{97A5CDDC-CF6B-45D0-830B-2315AB2C559C} = {8BA313EC-60DD-433A-A10B-7C08D02315B6}
 		{2B41EFF5-AFCF-4BFF-94C9-D36D6A99947C} = {8BA313EC-60DD-433A-A10B-7C08D02315B6}
+		{A1898240-9459-4200-8771-11AD384AD85B} = {435D6502-F130-4EE8-809E-910D88D80BFE}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {BA7A376A-27A0-4870-9B73-018383AEB281}

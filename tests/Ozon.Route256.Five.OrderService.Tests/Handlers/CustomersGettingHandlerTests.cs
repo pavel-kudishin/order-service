@@ -13,8 +13,8 @@ public class CustomersGettingHandlerTests
     public async Task GetAllCustomers()
     {
         Mock<ICustomerRepository> customerRepository = new();
-        customerRepository.Setup(repo => repo.GetAll(CancellationToken.None))
-            .Returns(Task.FromResult(TestData.GetTestCustomers()));
+        customerRepository.Setup(repo => repo.GetAll(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(TestData.GetTestCustomers());
 
         CustomersGettingHandler handler =
             new(customerRepository.Object);

@@ -2,7 +2,7 @@ using Grpc.Core;
 using Grpc.Core.Interceptors;
 using Microsoft.Extensions.Logging;
 
-namespace Ozon.Route256.Five.OrderService.Grpc;
+namespace Ozon.Route256.Five.OrderService.Grpc.Logging;
 
 internal sealed class LoggerInterceptor : Interceptor
 {

@@ -1,5 +1,6 @@
 using Confluent.Kafka;
 using Microsoft.Extensions.Logging;
+using Ozon.Route256.Five.OrderService.Core.Logging;
 using Ozon.Route256.Five.OrderService.Kafka.Settings;
 
 namespace Ozon.Route256.Five.OrderService.Kafka.Producers;
@@ -35,7 +36,7 @@ internal sealed class KafkaProducer: IDisposable, IKafkaProducer
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "Error in {Topic} producer", topic);
+            _logger.LogTopicProducerError(e, topic);
             throw;
         }
     }

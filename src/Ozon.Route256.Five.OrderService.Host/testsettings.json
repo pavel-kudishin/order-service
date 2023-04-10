@@ -1,0 +1,8 @@
+{
+    "Postgres": {
+        "Db": "orders_db",
+        "Login": "postgres",
+        "Password": "secret",
+        "Cluster": "orders-cluster"
+    }
+}

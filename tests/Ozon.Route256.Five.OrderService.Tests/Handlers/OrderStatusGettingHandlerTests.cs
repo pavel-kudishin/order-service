@@ -13,8 +13,8 @@ public class OrderStatusGettingHandlerTests
     public async Task Status_Successful()
     {
         Mock<IOrderRepository> orderRepository = new();
-        orderRepository.Setup(repo => repo.Find(TestData.ORDER_ID, CancellationToken.None))
-            .Returns(Task.FromResult((OrderBo?)TestData.GetTestOrder()));
+        orderRepository.Setup(repo => repo.Find(TestData.ORDER_ID, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((OrderBo?)TestData.GetTestOrder());
 
         OrderStatusGettingHandler handler = new(orderRepository.Object);
 

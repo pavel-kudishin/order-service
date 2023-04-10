@@ -1,4 +1,5 @@
-﻿using System.Data.Common;
+﻿using System.Data;
+using System.Data.Common;
 using Dapper;
 using Ozon.Route256.Five.OrderService.Core.ClientBalancing;
 using Ozon.Route256.Five.OrderService.Core.Exceptions;
@@ -309,10 +310,10 @@ internal sealed class OrderDbRepository : IOrderRepository
         return result.ToOrdersBo(customers);
     }
 
-    private Dictionary<int, long[]>? GetBucketToOrderIdsMap(IEnumerable<long> orderIds)
+    private Dictionary<int, long[]> GetBucketToOrderIdsMap(IEnumerable<long> orderIds)
     {
-        Dictionary<int, long[]>? bucketToOrderIdsMap =
-            orderIds?
+        Dictionary<int, long[]> bucketToOrderIdsMap =
+            orderIds
                 .Select(orderId =>
                     (BucketId: _longShardingRule.GetBucketId(orderId, _dbStore.BucketsCount), OrderId: orderId))
                 .GroupBy(x => x.BucketId)
@@ -347,8 +348,8 @@ internal sealed class OrderDbRepository : IOrderRepository
 
         DynamicParameters indexParams = new();
         indexParams.Add("@customer_id", customerId);
-        indexParams.Add("@start_date", startDate);
-        indexParams.Add("@end_date", endDate);
+        indexParams.Add("@start_date", startDate, DbType.DateTime);
+        indexParams.Add("@end_date", endDate, DbType.DateTime);
         indexParams.Add("@limit", itemsPerPage);
         indexParams.Add("@offset", pageNumber * itemsPerPage);
 
@@ -454,12 +455,11 @@ internal sealed class OrderDbRepository : IOrderRepository
         }
 
         const string SQL = @"
-         SELECT
+        SELECT
             address_region AS Region,
             SUM(price) AS TotalOrdersPrice,
             SUM(weight) AS TotalWeight,
-            COUNT(*) AS OrdersCount,
-            COUNT(DISTINCT customer_id) AS CustomersCount
+            COUNT(*) AS OrdersCount
         FROM
             (
                 SELECT * FROM __bucket__.orders WHERE id = ANY(@order_ids)
@@ -467,24 +467,41 @@ internal sealed class OrderDbRepository : IOrderRepository
         GROUP BY address_region
         ";
 
+        const string SQL_CUSTOMERS = @"
+        SELECT DISTINCT
+            customer_id AS CustomerId,
+            address_region AS Region
+        FROM
+            __bucket__.orders
+        WHERE
+            id = ANY(@order_ids)
+        ";
+
         long[] orderIds = await GetOrderIdsFromIndex(regions, startDate, endDate, token);
 
-        List<AggregateOrdersDto> result = new();
-        Dictionary<int, long[]>? bucketToOrderIdsMap = GetBucketToOrderIdsMap(orderIds);
-        if (bucketToOrderIdsMap != null)
+        Dictionary<int, long[]> bucketToOrderIdsMap = GetBucketToOrderIdsMap(orderIds);
+        List<AggregateOrdersDto> result = new(regions.Length * bucketToOrderIdsMap.Count);
+        List<(int CustomerId, string Region)> customersByRegion = new List<(int CustomerId, string Region)>();
+
+        foreach ((int bucketId, long[] idsInBucket) in bucketToOrderIdsMap)
         {
-            foreach ((int bucketId, long[] idsInBucket) in bucketToOrderIdsMap)
-            {
-                DynamicParameters orderParams = new();
-                orderParams.Add("@order_ids", idsInBucket);
+            DynamicParameters orderParams = new();
+            orderParams.Add("@order_ids", idsInBucket);
 
-                await using DbConnection connection = _connectionFactory.GetConnectionByBucket(bucketId);
-                IEnumerable<AggregateOrdersDto> orders =
-                    await connection.QueryAsync<AggregateOrdersDto>(SQL, orderParams);
+            await using DbConnection connection = _connectionFactory.GetConnectionByBucket(bucketId);
+            IEnumerable<AggregateOrdersDto> orders =
+                await connection.QueryAsync<AggregateOrdersDto>(SQL, orderParams);
 
-                result.AddRange(orders);
-            }
+            result.AddRange(orders);
+
+            IEnumerable<(int CustomerId, string Region)> customers =
+                await connection.QueryAsync<(int CustomerId, string Region)>(SQL_CUSTOMERS, orderParams);
+
+            customersByRegion.AddRange(customers);
         }
+
+        ILookup<string, int> lookup = customersByRegion
+            .ToLookup(tuple => tuple.Region, tuple => tuple.CustomerId);
 
         AggregateOrdersDto[] aggregateOrders = result
             .GroupBy(o => o.Region)
@@ -496,7 +513,7 @@ internal sealed class OrderDbRepository : IOrderRepository
                     Region = g.Key,
                     OrdersCount = orderDtos.Sum(a => a.OrdersCount),
                     TotalWeight = orderDtos.Sum(a => a.TotalWeight),
-                    CustomersCount = orderDtos.Sum(a => a.CustomersCount),
+                    CustomersCount = lookup[g.Key].Distinct().Count(),
                     TotalOrdersPrice = orderDtos.Sum(a => a.TotalOrdersPrice),
                 };
             })
@@ -540,7 +557,7 @@ internal sealed class OrderDbRepository : IOrderRepository
             DynamicParameters indexParams = new();
             indexParams.Add("@region_names", namesInBucket);
             indexParams.Add("@start_date", startDate);
-            indexParams.Add("@end_date", endDate);
+            indexParams.Add("@end_date", endDate, DbType.DateTime);
 
             await using DbConnection connection = _connectionFactory.GetConnectionByBucket(bucketId);
             IEnumerable<long>? orderIds = await connection.QueryAsync<long>(SQL, indexParams);

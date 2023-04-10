@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Ozon.Route256.Five.OrderService.Core.Handlers.OrderEvents.Dto;
+using Ozon.Route256.Five.OrderService.Core.Logging;
 using Ozon.Route256.Five.OrderService.Domain.BusinessObjects;
 using Ozon.Route256.Five.OrderService.Domain.Repository;
 
@@ -26,7 +27,7 @@ public sealed class OrderEventsConsumerHandler
 
         if (order == null)
         {
-            _logger.LogError($"Order {message.Id} not found");
+            _logger.LogOrderNotFound(message.Id);
             return OrderEventsConsumerHandlerResult.NotFound;
         }
 

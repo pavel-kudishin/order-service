@@ -13,15 +13,15 @@ public class OrdersByCustomerGettingHandlerTests
     public async Task FindByCustomer()
     {
         Mock<ICustomerRepository> customerRepository = new();
-        customerRepository.Setup(repo => repo.Find(TestData.CUSTOMER_ID, CancellationToken.None))
-            .Returns(Task.FromResult((CustomerBo?)TestData.GetTestCustomer()));
+        customerRepository.Setup(repo => repo.Find(TestData.CUSTOMER_ID, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((CustomerBo?)TestData.GetTestCustomer());
 
         Mock<IOrderRepository> orderRepository = new();
         DateTime startDate = DateTime.UtcNow.AddDays(-1);
         DateTime endDate = DateTime.UtcNow;
         orderRepository.Setup(repo =>
-                repo.FindByCustomer(TestData.CUSTOMER_ID, startDate, endDate, 0, 10, CancellationToken.None))
-            .Returns(Task.FromResult(TestData.GetTestOrders()));
+                repo.FindByCustomer(TestData.CUSTOMER_ID, startDate, endDate, 0, 10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(TestData.GetTestOrders());
 
         OrdersByCustomerGettingHandler handler = new(customerRepository.Object, orderRepository.Object);
 

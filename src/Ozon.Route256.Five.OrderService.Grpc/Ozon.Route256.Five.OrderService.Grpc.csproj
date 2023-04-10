@@ -30,6 +30,9 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+
+    <PackageReference Include="prometheus-net" Version="8.0.0" />
+    <PackageReference Include="prometheus-net.AspNetCore" Version="8.0.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -39,7 +42,7 @@
   <ItemGroup>
     <Protobuf Include="Protos\Customers.proto" GrpcServices="Client" />
     <Protobuf Include="Protos\LogisticsSimulator.proto" GrpcServices="Client" />
-    <Protobuf Include="Protos\Orders.proto" GrpcServices="Service" />
+    <Protobuf Include="Protos\Orders.proto" GrpcServices="Both" />
     <Protobuf Include="Protos\sd.proto" GrpcServices="Client" />
   </ItemGroup>
 

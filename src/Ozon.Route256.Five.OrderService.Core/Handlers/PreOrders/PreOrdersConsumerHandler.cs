@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Ozon.Route256.Five.OrderService.Core.Handlers.PreOrders.Dto;
+using Ozon.Route256.Five.OrderService.Core.Logging;
 using Ozon.Route256.Five.OrderService.Domain.BusinessObjects;
 using Ozon.Route256.Five.OrderService.Domain.Repository;
 
@@ -38,19 +39,17 @@ public sealed class PreOrdersConsumerHandler: IKafkaConsumerHandler<string, PreO
 
         if (customerBo == null)
         {
-            _logger.LogError($"Customer #{customerId} not found");
+            _logger.LogCustomerNotFound(customerId);
             return PreOrdersConsumerHandlerResult.CustomerNotFound;
         }
 
         OrderBo orderBo = message.ToOrderBo(customerBo);
 
-        await _orderRepository.Insert(orderBo, token);
-
         RegionBo? region = await _regionRepository.Find(orderBo.Address!.Region, token);
 
         if (region == null)
         {
-            _logger.LogError($"Region {orderBo.Address.Region} not found");
+            _logger.LogRegionNotFound(orderBo.Address.Region);
             return PreOrdersConsumerHandlerResult.RegionNotFound;
         }
 
@@ -66,14 +65,16 @@ public sealed class PreOrdersConsumerHandler: IKafkaConsumerHandler<string, PreO
         if (isValid == false)
         {
             // Если расстояние более 5000, то заказ не валидиный
-            _logger.LogError($"Invalid order #{message.Id}");
+            _logger.LogInvalidOrder(message.Id);
             return PreOrdersConsumerHandlerResult.InvalidOrder;
         }
+
+        await _orderRepository.Insert(orderBo, token);
 
         NewOrderDto order = new(orderBo.Id);
         await _newOrdersKafkaPublisher.PublishToKafka(order, token);
 
-        _logger.LogDebug($"Order #{message.Id} published");
+        _logger.LogOrderPublished(message.Id);
 
         return PreOrdersConsumerHandlerResult.Success;
     }

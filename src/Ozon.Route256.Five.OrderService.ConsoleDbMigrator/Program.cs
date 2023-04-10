@@ -2,11 +2,11 @@
 
 namespace Ozon.Route256.Five.OrderService.ConsoleDbMigrator
 {
-    internal class Program
+    public class Program
     {
-        static async Task Main(string[] args)
+        public static async Task Main(string[] args)
         {
-            await Host
+            await Microsoft.Extensions.Hosting.Host
                 .CreateDefaultBuilder(args)
                 .ConfigureAppConfiguration(MigrationsExtensions.ConfigureAppConfiguration)
                 .ConfigureServices((context, services) =>

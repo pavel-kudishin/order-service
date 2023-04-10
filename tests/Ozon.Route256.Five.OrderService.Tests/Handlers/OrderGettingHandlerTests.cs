@@ -13,8 +13,8 @@ public class OrderGettingHandlerTests
     public async Task OrderNotFound()
     {
         Mock<IOrderRepository> orderRepository = new();
-        orderRepository.Setup(repo => repo.Find(1, CancellationToken.None))
-            .Returns(Task.FromResult<OrderBo?>(null));
+        orderRepository.Setup(repo => repo.Find(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((OrderBo?)null);
 
         Mock<ICustomerRepository> customerRepository = new();
 
@@ -30,12 +30,12 @@ public class OrderGettingHandlerTests
     public async Task OrderFound_Successful()
     {
         Mock<IOrderRepository> orderRepository = new();
-        orderRepository.Setup(repo => repo.Find(TestData.ORDER_ID, CancellationToken.None))
-            .Returns(Task.FromResult((OrderBo?)TestData.GetTestOrder()));
+        orderRepository.Setup(repo => repo.Find(TestData.ORDER_ID, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((OrderBo?)TestData.GetTestOrder());
 
         Mock<ICustomerRepository> customerRepository = new();
-        customerRepository.Setup(repo => repo.Find(TestData.CUSTOMER_ID, CancellationToken.None))
-            .Returns(Task.FromResult((CustomerBo?)TestData.GetTestCustomer()));
+        customerRepository.Setup(repo => repo.Find(TestData.CUSTOMER_ID, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((CustomerBo?)TestData.GetTestCustomer());
 
         OrderGettingHandler handler =
             new(orderRepository.Object, customerRepository.Object);

@@ -27,30 +27,40 @@ services:
      - orders-db-1
      - orders-db-2
      - redis-orders
-     - jaeger
+     - orders-service-jaeger
     restart: unless-stopped
 
   redis-customers:
     image: redis
     restart: unless-stopped
+    volumes:
+      - "redis_customers_data:/data"
 
   redis-orders:
     image: redis
     restart: unless-stopped
     ports:
       - "6382:6379"
+    volumes:
+      - "redis_orders_data:/data"
 
   redis-logistics:
     image: redis
     restart: unless-stopped
     ports:
       - "6379:6379"
+    volumes:
+      - "redis_logistics_data:/data"
 
   zookeeper:
     image: zookeeper
     ports:
       - "2181:2181"
     restart: unless-stopped
+    volumes:
+     - "zookeeper_data:/data"
+     - "zookeeper_datalog:/datalog"
+     - "zookeeper_logs:/logs"
 
   kafka:
     image: bitnami/kafka:latest
@@ -68,6 +78,8 @@ services:
     depends_on:
      - zookeeper
     restart: unless-stopped
+    volumes:
+     - "kafka_data:/bitnami"
 
   orders-db-1:
     image: postgres:latest
@@ -121,12 +133,14 @@ services:
     volumes:
      - pgadmin4_data:/var/lib/pgadmin
 
-  jaeger:
+  orders-service-jaeger:
     image: jaegertracing/all-in-one:latest
     ports:
       - "6831:6831/udp"
       - "16686:16686"
     restart: unless-stopped
+    volumes:
+     - "jaegertracing_tmp:/tmp"
 
   customer-service:
     image: gitlab-registry.ozon.dev/cs/classroom-5/teachers/five/customer-service:latest
@@ -203,3 +217,11 @@ volumes:
   pgdata_orders_1:
   pgdata_orders_2:
   pgadmin4_data:
+  kafka_data:
+  zookeeper_data:
+  zookeeper_datalog:
+  zookeeper_logs:
+  redis_logistics_data:
+  redis_orders_data:
+  redis_customers_data:
+  jaegertracing_tmp:

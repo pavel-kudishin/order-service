@@ -18,13 +18,13 @@ public class OrderEventsConsumerHandlerTests
 
         Mock<IOrderRepository> orderRepository = new();
         Expression<Func<IOrderRepository, Task<OrderBo?>>> findExpression =
-            repo => repo.Find(TestData.ORDER_ID, CancellationToken.None);
-        orderRepository.Setup(findExpression).Returns(Task.FromResult((OrderBo?)orderDto));
+            repo => repo.Find(TestData.ORDER_ID, It.IsAny<CancellationToken>());
+        orderRepository.Setup(findExpression).ReturnsAsync((OrderBo?)orderDto);
 
         orderDto.SetState(OrderStateBo.Delivered);
 
         Expression<Func<IOrderRepository, Task>> updateExpression =
-            repo => repo.Update(orderDto, CancellationToken.None);
+            repo => repo.Update(orderDto, It.IsAny<CancellationToken>());
         orderRepository.Setup(updateExpression).Returns(Task.CompletedTask);
 
         Mock<ILogger<OrderEventsConsumerHandler>> logger = new();

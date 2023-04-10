@@ -26,20 +26,20 @@ public class PreOrdersConsumerHandlerTests
 
         Mock<ICustomerRepository> customerRepository = new();
         Expression<Func<ICustomerRepository, Task<CustomerBo?>>> findExpression =
-            repo => repo.Find(TestData.CUSTOMER_ID, CancellationToken.None);
-        customerRepository.Setup(findExpression).Returns(Task.FromResult((CustomerBo?)TestData.GetTestCustomer()));
+            repo => repo.Find(TestData.CUSTOMER_ID, It.IsAny<CancellationToken>());
+        customerRepository.Setup(findExpression).ReturnsAsync((CustomerBo?)TestData.GetTestCustomer());
 
         Mock<IOrderRepository> orderRepository = new();
         Mock<ILogger<PreOrdersConsumerHandler>> logger = new();
 
         Mock<IRegionRepository> regionRepository = new();
         Expression<Func<IRegionRepository, Task<RegionBo?>>> findRegionExpression =
-            repo => repo.Find(TestData.REGION_NAME, CancellationToken.None);
-        regionRepository.Setup(findRegionExpression).Returns(Task.FromResult((RegionBo?)TestData.GetTestRegion()));
+            repo => repo.Find(TestData.REGION_NAME, It.IsAny<CancellationToken>());
+        regionRepository.Setup(findRegionExpression).ReturnsAsync((RegionBo?)TestData.GetTestRegion());
 
         Mock<INewOrdersKafkaPublisher> newOrdersKafkaPublisher = new();
         Expression<Func<INewOrdersKafkaPublisher, Task>> publishToKafkaExpression =
-            publisher => publisher.PublishToKafka(new NewOrderDto(TestData.ORDER_ID), CancellationToken.None);
+            publisher => publisher.PublishToKafka(new NewOrderDto(TestData.ORDER_ID), It.IsAny<CancellationToken>());
         newOrdersKafkaPublisher.Setup(publishToKafkaExpression).Returns(Task.CompletedTask);
 
         Mock<IDistanceValidator> distanceValidator = new();

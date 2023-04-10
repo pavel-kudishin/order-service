@@ -1,5 +1,6 @@
 ﻿using Ozon.Route256.Five.OrderService.Grpc.Extensions;
 using Ozon.Route256.Five.OrderService.Host.Extensions;
+using Prometheus;
 
 namespace Ozon.Route256.Five.OrderService.Host
 {
@@ -25,6 +26,7 @@ namespace Ozon.Route256.Five.OrderService.Host
             {
                 routeBuilder.MapControllers();
                 routeBuilder.MapGrpc();
+                routeBuilder.MapMetrics();
             });
             app.UseSwagger()
                 .UseSwaggerUI();

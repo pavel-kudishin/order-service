@@ -1,5 +1,6 @@
 ﻿using Confluent.Kafka;
 using Ozon.Route256.Five.OrderService.Core.Handlers;
+using Ozon.Route256.Five.OrderService.Core.Logging;
 using Ozon.Route256.Five.OrderService.Kafka.Exceptions;
 using Ozon.Route256.Five.OrderService.Kafka.Settings;
 
@@ -57,7 +58,7 @@ internal sealed class BackgroundKafkaConsumer<TKey, TMessage, THandler, TResult>
                 .Build();
 
         consumer.Subscribe(_topic);
-        _logger.LogInformation("Success subscribe to {Topic}", _topic);
+        _logger.LogSuccessSubscribeToTopic(_topic);
 
         while (token.IsCancellationRequested == false)
         {
@@ -74,7 +75,7 @@ internal sealed class BackgroundKafkaConsumer<TKey, TMessage, THandler, TResult>
                     }
                     catch (Exception e)
                     {
-                        _logger.LogError(e, $"Failed to handle message with key {consumeResult.Message.Key} in topic {{Topic}}", _topic);
+                        _logger.LogFailedToHandle(e, consumeResult.Message.Key?.ToString(), _topic);
                     }
                 }
 
@@ -82,7 +83,7 @@ internal sealed class BackgroundKafkaConsumer<TKey, TMessage, THandler, TResult>
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "Error in topic {Topic} during kafka consume", _topic);
+                _logger.LogErrorInTopic(e, _topic);
                 await Task.Delay(_timeoutForRetry, token);
             }
         }

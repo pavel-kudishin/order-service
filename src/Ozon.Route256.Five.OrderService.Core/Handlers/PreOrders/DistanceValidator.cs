@@ -6,7 +6,7 @@ public sealed class DistanceValidator : IDistanceValidator
     {
         double distance = Distance(lat1, lon1, lat2, lon2);
 
-        const double MAX_DISTANCE_KM = 5_000d;
+        const double MAX_DISTANCE_KM = 10_000d;
 
         return distance <= MAX_DISTANCE_KM;
     }

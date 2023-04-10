@@ -2,10 +2,13 @@
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Ozon.Route256.Five.LogisticsSimulator.Grpc;
 using Ozon.Route256.Five.OrderService.Core.Abstractions;
 using Ozon.Route256.Five.OrderService.Core.Exceptions;
+using Ozon.Route256.Five.OrderService.Core.Extensions;
 using Ozon.Route256.Five.OrderService.Grpc.GrpcServices;
+using Ozon.Route256.Five.OrderService.Grpc.Logging;
 using Ozon.Route256.Five.OrderService.Grpc.Services;
 
 namespace Ozon.Route256.Five.OrderService.Grpc.Extensions;
@@ -17,25 +20,25 @@ public static class ServiceCollectionExtensions
         services.AddGrpc(options =>
         {
             options.Interceptors.Add<LoggerInterceptor>();
+            options.Interceptors.Add<TraceInterceptor>();
+            options.Interceptors.Add<MetricsInterceptor>();
         });
         services.AddGrpcReflection();
 
         services.AddSingleton<LoggerInterceptor>();
+        services.TryAddSingleton<IGrpcMetrics, GrpcMetrics>();
 
-        const string SERVICE_DISCOVERY_ADDRESS_KEY = "ROUTE256_SERVICE_DISCOVERY_ADDRESS";
         string serviceDiscoveryAddress =
-            configuration.GetValue<string>(SERVICE_DISCOVERY_ADDRESS_KEY)
-            ?? throw new InvalidConfigurationException(SERVICE_DISCOVERY_ADDRESS_KEY);
+            configuration.GetValue<string>(Constants.SERVICE_DISCOVERY_ADDRESS_KEY)
+            ?? throw new InvalidConfigurationException(Constants.SERVICE_DISCOVERY_ADDRESS_KEY);
 
-        const string LOGISTICS_SIMULATOR_ADDRESS_KEY = "ROUTE256_LOGISTICS_SIMULATOR_ADDRESS";
         string logisticsSimulatorAddress =
-            configuration.GetValue<string>(LOGISTICS_SIMULATOR_ADDRESS_KEY)
-            ?? throw new InvalidConfigurationException(LOGISTICS_SIMULATOR_ADDRESS_KEY);
+            configuration.GetValue<string>(Constants.LOGISTICS_SIMULATOR_ADDRESS_KEY)
+            ?? throw new InvalidConfigurationException(Constants.LOGISTICS_SIMULATOR_ADDRESS_KEY);
 
-        const string CUSTOMER_SERVICE_ADDRESS_KEY = "ROUTE256_CUSTOMER_SERVICE_ADDRESS";
         string customerServiceAddress =
-            configuration.GetValue<string>(CUSTOMER_SERVICE_ADDRESS_KEY)
-            ?? throw new InvalidConfigurationException(CUSTOMER_SERVICE_ADDRESS_KEY);
+            configuration.GetValue<string>(Constants.CUSTOMER_SERVICE_ADDRESS_KEY)
+            ?? throw new InvalidConfigurationException(Constants.CUSTOMER_SERVICE_ADDRESS_KEY);
 
         services.AddGrpcClient<SdService.SdServiceClient>(
                 options =>

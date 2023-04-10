@@ -1,7 +1,9 @@
 using Grpc.Core;
 using Microsoft.Extensions.Options;
 using Ozon.Route256.Five.OrderService.Core.ClientBalancing;
+using Ozon.Route256.Five.OrderService.Core.Logging;
 using Ozon.Route256.Five.OrderService.Db.Settings;
+using Ozon.Route256.Five.OrderService.Host.Extensions;
 
 namespace Ozon.Route256.Five.OrderService.Host.BackgroundServices;
 
@@ -41,9 +43,7 @@ internal sealed class SdConsumerHostedService : BackgroundService
                 while (await stream.ResponseStream.MoveNext(stoppingToken))
                 {
                     DbResourcesResponse response = stream.ResponseStream.Current;
-                    _logger.LogDebug(
-                        "Получены новые данные из SD. Timestamp {Timestamp}",
-                        response.LastUpdated.ToDateTime());
+                    _logger.LogSdServiceResponseReceived(response.LastUpdated.ToDateTime());
 
                     List<DbEndpoint> endpoints = new List<DbEndpoint>(response.Replicas.Count);
 
@@ -60,7 +60,7 @@ internal sealed class SdConsumerHostedService : BackgroundService
             }
             catch (RpcException exc)
             {
-                _logger.LogError(exc, "Не удалось связаться с SD");
+                _logger.LogSdConnectionError(exc);
                 await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
             }
         }

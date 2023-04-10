@@ -8,7 +8,7 @@ internal sealed class OrdersByCustomerRequestDtoValidator
 {
 	public OrdersByCustomerRequestDtoValidator()
 	{
-		RuleFor(x => x.CustomerId).GreaterThan(0);
+		RuleFor(x => x.CustomerId).GreaterThanOrEqualTo(0);
 		RuleFor(x => x.StartDate).Custom((startDate, context) =>
 		{
 			if (startDate.HasValue && context.InstanceToValidate.EndDate.HasValue)

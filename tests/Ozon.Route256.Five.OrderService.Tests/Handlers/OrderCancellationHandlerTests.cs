@@ -14,12 +14,12 @@ public class OrderCancellationHandlerTests
     public async Task OrderCancel_Successful()
     {
         Mock<IOrderRepository> orderRepository = new();
-        orderRepository.Setup(repo => repo.Find(TestData.ORDER_ID, CancellationToken.None))
-            .Returns(Task.FromResult((OrderBo?)TestData.GetTestOrder()));
+        orderRepository.Setup(repo => repo.Find(TestData.ORDER_ID, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((OrderBo?)TestData.GetTestOrder());
 
         Mock<ILogisticService> client = new();
-        client.Setup(repo => repo.OrderCancelAsync(TestData.ORDER_ID, CancellationToken.None))
-            .Returns(Task.FromResult<HandlerResult>(HandlerResult.Ok));
+        client.Setup(repo => repo.OrderCancelAsync(TestData.ORDER_ID, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(HandlerResult.Ok);
 
         OrderCancellationHandler handler = new(orderRepository.Object, client.Object);
 

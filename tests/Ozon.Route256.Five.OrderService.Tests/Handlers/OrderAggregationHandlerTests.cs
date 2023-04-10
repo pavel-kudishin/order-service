@@ -13,19 +13,19 @@ public class OrderAggregationHandlerTests
     public async Task AggregateOrders()
     {
         Mock<IRegionRepository> regionRepository = new();
-        regionRepository.Setup(repo => repo.GetAll(CancellationToken.None))
-            .Returns(Task.FromResult(TestData.GetTestRegions()));
+        regionRepository.Setup(repo => repo.GetAll(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(TestData.GetTestRegions());
         regionRepository.Setup(repo =>
-                repo.FindMany(new []{ TestData .REGION_NAME}, CancellationToken.None))
-            .Returns(Task.FromResult(TestData.GetTestRegions()));
+                repo.FindMany(new []{ TestData .REGION_NAME}, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(TestData.GetTestRegions());
 
         DateTime startDate = DateTime.UtcNow.AddDays(-1);
         DateTime endDate = DateTime.UtcNow;
 
         Mock<IOrderRepository> orderRepository = new();
         orderRepository.Setup(repo =>
-                repo.AggregateOrders(new[] { TestData.REGION_NAME }, startDate, endDate, CancellationToken.None))
-            .Returns(Task.FromResult(TestData.GetTestAggregateOrders()));
+                repo.AggregateOrders(new[] { TestData.REGION_NAME }, startDate, endDate, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(TestData.GetTestAggregateOrders());
 
         OrderAggregationHandler handler =
             new(orderRepository.Object, regionRepository.Object);

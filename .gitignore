@@ -25,3 +25,5 @@
 /src/Ozon.Route256.Five.OrderService.ConsoleDbMigrator/obj
 /src/Ozon.Route256.Five.OrderService.Domain/bin
 /src/Ozon.Route256.Five.OrderService.Domain/obj
+/tests/Ozon.Route256.Five.OrderService.IntegrationTests/bin
+/tests/Ozon.Route256.Five.OrderService.IntegrationTests/obj
